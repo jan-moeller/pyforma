@@ -15,5 +15,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "basedpyright>=1.31.4",
     "ruff>=0.12.12",
 ]

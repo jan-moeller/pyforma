@@ -29,5 +29,8 @@ jobs:
       - name: Static analysis
         run: uv run ruff check
 
+      - name: Type checking
+        run: uv run basedpyright
+
       - name: Build
         run: uv build
