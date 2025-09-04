@@ -32,5 +32,8 @@ jobs:
       - name: Type checking
         run: uv run basedpyright
 
+      - name: Unit tests
+        run: uv run pytest
+
       - name: Build
         run: uv build
