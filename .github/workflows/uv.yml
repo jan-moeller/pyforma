@@ -23,5 +23,11 @@ jobs:
       - name: Sync project
         run: uv sync --locked --all-extras --dev
 
+      - name: Check format
+        run: uv run ruff format --diff
+
+      - name: Static analysis
+        run: uv run ruff check
+
       - name: Build
         run: uv build
