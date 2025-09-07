@@ -34,3 +34,8 @@ addopts = [
 testpaths = [
     "tests",
 ]
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+reportExplicitAny = "none"
+reportAny = "none"
