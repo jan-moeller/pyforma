@@ -7,3 +7,4 @@ from .parse_error import ParseError as ParseError
 from .munch import munch as munch
 from .whitespace import whitespace as whitespace
 from .non_empty import non_empty as non_empty
+from .literal import literal as literal
