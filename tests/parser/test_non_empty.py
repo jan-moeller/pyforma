@@ -6,7 +6,7 @@ import pytest
 from pyforma._parser import (
     ParseError,
     ParseResult,
-    ParseInput,
+    ParseContext,
     Parser,
     whitespace,
     non_empty,
@@ -27,7 +27,7 @@ def test_non_empty(
     expected: ContextManager[str],
 ):
     with expected as e:
-        assert non_empty(parser)(ParseInput(source)) == ParseResult(
-            remaining=ParseInput(source, index=len(e)),
+        assert non_empty(parser)(ParseContext(source)) == ParseResult(
+            context=ParseContext(source, index=len(e)),
             result=e,
         )

@@ -5,37 +5,37 @@ from typing import overload, Any, Annotated
 from annotated_types import MinLen
 
 from .parse_result import ParseResult
-from .parse_input import ParseInput
+from .parse_context import ParseContext
 
 
 @dataclass(frozen=True)
 class Parser[T = Any]:
     """Concrete parser type"""
 
-    parse: Callable[[ParseInput], ParseResult[T]]  # parser function
+    parse: Callable[[ParseContext], ParseResult[T]]  # parser function
     name: Annotated[str, MinLen(1)]  # parser name
 
-    def __call__(self, input: ParseInput) -> ParseResult[T]:
+    def __call__(self, context: ParseContext) -> ParseResult[T]:
         """Parses the provided input using the parser function.
 
         Args:
-            input: The input to be parsed.
+            context: The parse context.
 
         Returns:
             The parsed result.
         """
-        return self.parse(input)
+        return self.parse(context)
 
 
 type ParserDecorator[T = Any] = Callable[
-    [Callable[[ParseInput], ParseResult[T]]], Parser[T]
+    [Callable[[ParseContext], ParseResult[T]]], Parser[T]
 ]
 """Type of decorator for parser functions"""
 
 
 @overload
 def parser[T](
-    function: Callable[[ParseInput], ParseResult[T]],
+    function: Callable[[ParseContext], ParseResult[T]],
     /,
     *,
     name: str | None = None,
@@ -67,7 +67,7 @@ def parser[T](*, name: str) -> ParserDecorator[T]:
 
 
 def parser[T](
-    function: Callable[[ParseInput], ParseResult[T]] | None = None,
+    function: Callable[[ParseContext], ParseResult[T]] | None = None,
     /,
     *,
     name: str | None = None,

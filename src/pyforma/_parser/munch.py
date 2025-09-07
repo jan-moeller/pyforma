@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from .parse_error import ParseError
-from .parse_input import ParseInput
+from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .parser import Parser, parser
 
@@ -24,14 +24,14 @@ def munch(predicate: Callable[[str], bool]) -> Parser[str]:
         name = f"munch_{predicate.__class__.__name__}"
 
     @parser(name=name)
-    def parse_munching(input: ParseInput) -> ParseResult[str]:
+    def parse_munching(context: ParseContext) -> ParseResult[str]:
         try:
-            return _munch_impl(input, predicate)
+            return _munch_impl(context, predicate)
 
         except Exception as e:
             raise ParseError(
                 f"Failed to munch with predicate {predicate.__name__}",
-                input=input,
+                context=context,
                 parser=parse_munching,
             ) from e
 
@@ -39,7 +39,7 @@ def munch(predicate: Callable[[str], bool]) -> Parser[str]:
 
 
 def _munch_impl(
-    source: ParseInput,
+    source: ParseContext,
     predicate: Callable[[str], bool],
 ) -> ParseResult[str]:
     remaining = source
@@ -50,4 +50,4 @@ def _munch_impl(
             remaining = remaining.consume()
         else:
             break
-    return ParseResult(remaining=remaining, result=source.peek(offset))
+    return ParseResult(context=remaining, result=source.peek(offset))

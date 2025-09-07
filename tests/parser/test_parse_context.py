@@ -2,7 +2,7 @@ from contextlib import nullcontext
 from typing import ContextManager
 import pytest
 
-from pyforma._parser import ParseInput
+from pyforma._parser import ParseContext
 
 
 @pytest.mark.parametrize(
@@ -15,15 +15,15 @@ from pyforma._parser import ParseInput
     ],
 )
 def test_simple(source: str, index: int, length: int):
-    input = ParseInput(source, index)
-    assert input.source == source
-    assert input.index == index
-    assert input.at_bof() == (index == 0)
-    assert input.at_eof() == (index == len(source))
-    assert input[:] == source[index:]
-    assert list(input) == list(source[index:])
-    assert len(input) == length
-    assert str(input) == source[index:]
+    context = ParseContext(source, index)
+    assert context.source == source
+    assert context.index == index
+    assert context.at_bof() == (index == 0)
+    assert context.at_eof() == (index == len(source))
+    assert context[:] == source[index:]
+    assert list(context) == list(source[index:])
+    assert len(context) == length
+    assert str(context) == source[index:]
 
 
 @pytest.mark.parametrize(
@@ -37,7 +37,7 @@ def test_simple(source: str, index: int, length: int):
 )
 def test_invalid_initialization(source: str, index: int):
     with pytest.raises(ValueError):
-        _ = ParseInput(source, index)
+        _ = ParseContext(source, index)
 
 
 @pytest.mark.parametrize(
@@ -66,9 +66,9 @@ def test_indexing(
     item: int | slice,
     expected: ContextManager[str],
 ):
-    input = ParseInput(source, index)
+    context = ParseContext(source, index)
     with expected as e:
-        assert input[item] == e
+        assert context[item] == e
 
 
 @pytest.mark.parametrize(
@@ -86,9 +86,9 @@ def test_peek(
     count: int,
     expected: ContextManager[str],
 ):
-    input = ParseInput(source, index)
+    context = ParseContext(source, index)
     with expected as e:
-        assert input.peek(count) == e
+        assert context.peek(count) == e
 
 
 @pytest.mark.parametrize(
@@ -109,9 +109,9 @@ def test_consume(
     count: int,
     expected: ContextManager[int],
 ):
-    input = ParseInput(source, index)
+    context = ParseContext(source, index)
     with expected as e:
-        assert input.consume(count) == ParseInput(source, e)
+        assert context.consume(count) == ParseContext(source, e)
 
 
 @pytest.mark.parametrize(
@@ -130,5 +130,5 @@ def test_line_and_column(
     line: int,
     col: int,
 ):
-    input = ParseInput(source, index)
-    assert input.line_and_column() == (line, col)
+    context = ParseContext(source, index)
+    assert context.line_and_column() == (line, col)

@@ -1,21 +1,21 @@
 from typing import Any, override
 import pytest
 
-from pyforma._parser import ParseResult, ParseInput, parser, Parser
+from pyforma._parser import ParseResult, ParseContext, parser, Parser
 
 
 @parser
-def empty(source: ParseInput) -> ParseResult[str]:
-    return ParseResult(remaining=source, result="")
+def empty(source: ParseContext) -> ParseResult[str]:
+    return ParseResult(context=source, result="")
 
 
 @parser(name="empty")
-def parse_empty(source: ParseInput) -> ParseResult[str]:
+def parse_empty(source: ParseContext) -> ParseResult[str]:
     return empty(source)
 
 
 class EmptyParser:
-    def __call__(self, source: ParseInput) -> ParseResult[str]:
+    def __call__(self, source: ParseContext) -> ParseResult[str]:
         return empty(source)
 
 
@@ -34,7 +34,7 @@ empty_parser2 = parser(EmptyParser(), name="empty")
 )
 def test_parser(parser: Parser[str], expected_name: str):
     assert parser.name == expected_name
-    assert parser(ParseInput("foo")).result == ""
+    assert parser(ParseContext("foo")).result == ""
 
 
 def test_unsupported_parser():
@@ -45,8 +45,8 @@ def test_unsupported_parser():
                 raise AttributeError("__class__ hidden")
             return super().__getattribute__(name)
 
-        def __call__(self, input: ParseInput) -> ParseResult[str]:
-            return ParseResult(remaining=input, result="")
+        def __call__(self, context: ParseContext) -> ParseResult[str]:
+            return ParseResult(context=context, result="")
 
     with pytest.raises(TypeError):
         _ = parser(WeirdParser())

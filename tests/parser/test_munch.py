@@ -5,7 +5,7 @@ from typing import Any, ContextManager, final, override
 
 import pytest
 
-from pyforma._parser import munch, ParseError, ParseResult, ParseInput
+from pyforma._parser import munch, ParseError, ParseResult, ParseContext
 
 
 @final
@@ -48,7 +48,7 @@ def test_munch(
     expected: ContextManager[str],
 ):
     with expected as e:
-        assert munch(predicate)(ParseInput(source)) == ParseResult(
-            remaining=ParseInput(source, index=len(e)),
+        assert munch(predicate)(ParseContext(source)) == ParseResult(
+            context=ParseContext(source, index=len(e)),
             result=e,
         )

@@ -2,7 +2,7 @@ from typing import Any, overload
 
 from .parse_error import ParseError
 from .parse_result import ParseResult
-from .parse_input import ParseInput
+from .parse_context import ParseContext
 from .parser import Parser, parser
 
 
@@ -70,18 +70,18 @@ def sequence(*in_parsers: Parser[Any]) -> Parser[tuple[Any, ...]]:
     """
 
     @parser(name=f"sequence_{'__'.join(p.name for p in in_parsers)}")
-    def sequence_parser(input: ParseInput) -> ParseResult[tuple[Any, ...]]:
-        cur_input = input
+    def sequence_parser(context: ParseContext) -> ParseResult[tuple[Any, ...]]:
+        cur_context = context
         results: list[Any] = []
         try:
             for p in in_parsers:
-                r = p(cur_input)
-                cur_input = r.remaining
+                r = p(cur_context)
+                cur_context = r.context
                 results.append(r.result)
 
         except ParseError as e:
-            raise ParseError("", parser=sequence_parser, input=input) from e
+            raise ParseError("", parser=sequence_parser, context=context) from e
 
-        return ParseResult(remaining=cur_input, result=tuple(results))
+        return ParseResult(context=cur_context, result=tuple(results))
 
     return sequence_parser

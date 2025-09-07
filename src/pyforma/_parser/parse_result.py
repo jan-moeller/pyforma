@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import Any
 
-from .parse_input import ParseInput
+from .parse_context import ParseContext
 
 
 @dataclass(frozen=True)
 class ParseResult[T = Any]:
-    remaining: ParseInput  # Remaining input
+    context: ParseContext  # Remaining input
     result: T  # Parse result

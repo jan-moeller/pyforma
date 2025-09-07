@@ -3,7 +3,7 @@ from typing import Any, ContextManager
 
 import pytest
 
-from pyforma._parser import sequence, Parser, literal, ParseInput, ParseError
+from pyforma._parser import sequence, Parser, literal, ParseContext, ParseError
 
 
 @pytest.mark.parametrize(
@@ -22,5 +22,5 @@ def test_sequence(
     expected: ContextManager[tuple[str, ...]],
 ):
     with expected as e:
-        result = sequence(*parsers)(ParseInput(source))
+        result = sequence(*parsers)(ParseContext(source))
         assert result.result == e

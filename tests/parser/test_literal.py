@@ -3,7 +3,7 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._parser import ParseInput, literal, ParseResult, ParseError
+from pyforma._parser import ParseContext, literal, ParseResult, ParseError
 
 
 @pytest.mark.parametrize(
@@ -22,7 +22,7 @@ def test_literal(
     expected: ContextManager[str],
 ):
     with expected as e:
-        assert literal(lit)(ParseInput(source)) == ParseResult(
-            remaining=ParseInput(source, index=len(e)),
+        assert literal(lit)(ParseContext(source)) == ParseResult(
+            context=ParseContext(source, index=len(e)),
             result=e,
         )

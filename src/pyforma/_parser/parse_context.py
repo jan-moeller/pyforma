@@ -4,7 +4,7 @@ from typing import override
 
 
 @dataclass(frozen=True)
-class ParseInput:
+class ParseContext:
     """Maintains the input for parsing"""
 
     source: str  # Complete input string
@@ -22,7 +22,7 @@ class ParseInput:
                 return self.source[self.index :].__getitem__(item)
             case _:  # pyright: ignore[reportUnnecessaryComparison]
                 raise TypeError(  # pyright: ignore[reportUnreachable]
-                    f"ParseInput indices must be integers, not {type(item)}"
+                    f"ParseContext indices must be integers, not {type(item)}"
                 )
 
     def __len__(self) -> int:
@@ -56,7 +56,7 @@ class ParseInput:
             )
         return self.source[self.index : self.index + count]
 
-    def consume(self, count: int = 1) -> "ParseInput":
+    def consume(self, count: int = 1) -> "ParseContext":
         """Consumes some of the remaining input.
 
         Args:
@@ -71,7 +71,7 @@ class ParseInput:
             raise ValueError(
                 f"remaining input too short: requested {count} but is {self.__len__()}"
             )
-        return ParseInput(self.source, self.index + count)
+        return ParseContext(self.source, self.index + count)
 
     def at_eof(self) -> bool:
         """Checks if no remaining input is left."""
