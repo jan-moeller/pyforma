@@ -1,6 +1,8 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import overload, Any
+from typing import overload, Any, Annotated
+
+from annotated_types import MinLen
 
 from .parse_result import ParseResult
 from .parse_input import ParseInput
@@ -11,7 +13,7 @@ class Parser[T = Any]:
     """Concrete parser type"""
 
     parse: Callable[[ParseInput], ParseResult[T]]  # parser function
-    name: str  # parser name
+    name: Annotated[str, MinLen(1)]  # parser name
 
     def __call__(self, input: ParseInput) -> ParseResult[T]:
         """Parses the provided input using the parser function.
