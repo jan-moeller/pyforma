@@ -9,3 +9,4 @@ from .whitespace import whitespace as whitespace
 from .non_empty import non_empty as non_empty
 from .literal import literal as literal
 from .sequence import sequence as sequence
+from .alternation import alternation as alternation
