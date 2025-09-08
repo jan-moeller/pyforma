@@ -14,3 +14,4 @@ from .comment import comment as comment
 from .comment import Comment as Comment
 from .not_in import not_in as not_in
 from .text import text as text
+from .repetition import repetition as repetition
