@@ -10,3 +10,5 @@ from .non_empty import non_empty as non_empty
 from .literal import literal as literal
 from .sequence import sequence as sequence
 from .alternation import alternation as alternation
+from .comment import comment as comment
+from .comment import Comment as Comment
