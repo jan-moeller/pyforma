@@ -12,3 +12,4 @@ from .sequence import sequence as sequence
 from .alternation import alternation as alternation
 from .comment import comment as comment
 from .comment import Comment as Comment
+from .not_in import not_in as not_in
