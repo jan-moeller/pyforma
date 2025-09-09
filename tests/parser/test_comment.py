@@ -3,17 +3,17 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._parser import ParseContext, ParseError, comment
+from pyforma._parser import ParseContext, ParseError, comment, Comment
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
         ("", pytest.raises(ParseError), 0),
-        ("{#foo#}", nullcontext("foo"), 7),
-        ("{#foo#}bar", nullcontext("foo"), 7),
-        ("{# foo bar #} baz", nullcontext(" foo bar "), 13),
-        ("{# foo {# bar #} #} baz", nullcontext(" foo {# bar #} "), 19),
+        ("{#foo#}", nullcontext(Comment("foo")), 7),
+        ("{#foo#}bar", nullcontext(Comment("foo")), 7),
+        ("{# foo bar #} baz", nullcontext(Comment(" foo bar ")), 13),
+        ("{# foo {# bar #} #} baz", nullcontext(Comment(" foo {# bar #} ")), 19),
         ("{# foo", pytest.raises(ParseError), 0),
         ("{# {# #}", pytest.raises(ParseError), 0),
     ],

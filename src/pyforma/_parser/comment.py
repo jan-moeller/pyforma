@@ -1,11 +1,15 @@
+from dataclasses import dataclass
 from .parser import parser, Parser
 from .parse_context import ParseContext
 from .parse_error import ParseError
 from .parse_result import ParseResult
 
 
-class Comment(str):
+@dataclass
+class Comment:
     """Tagged string for comments."""
+
+    text: str
 
 
 def comment(open: str, close: str) -> Parser[Comment]:
@@ -44,7 +48,7 @@ def comment(open: str, close: str) -> Parser[Comment]:
         while not cur_context.at_eof():
             if cur_context[:].startswith(open):
                 r = parse_comment(cur_context)
-                result += f"{open}{r.result}{close}"
+                result += f"{open}{r.result.text}{close}"
                 cur_context = r.context
             elif cur_context[:].startswith(close):
                 return ParseResult(
