@@ -17,3 +17,5 @@ from .text import text as text
 from .repetition import repetition as repetition
 from .template import template as template
 from .identifier import identifier as identifier
+from .expression_block import expression_block as expression_block
+from .expression_block import Expression as Expression
