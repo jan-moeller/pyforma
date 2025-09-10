@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, ContextManager
@@ -28,29 +29,38 @@ def test_unresolved_identifiers(
 
 
 @pytest.mark.parametrize(
-    "source,sub,keep_comments,expected",
+    "source,sub,keep_comments,renderers,expected",
     [
-        ("", {}, True, []),
-        ("foo", {}, True, ["foo"]),
-        ("foo{{bar}}", {}, True, ["foo", Expression("bar")]),
-        ("foo{{bar}}", {"bar": ""}, True, ["foo"]),
-        ("{{foo}}bar", {"foo": ""}, True, ["bar"]),
-        ("{{foo}}{{bar}}", {"foo": 42}, True, ["42", Expression("bar")]),
-        ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, ["42y"]),
-        ("{#foo#}{{bar}}", {"bar": 42}, True, [Comment("foo"), "42"]),
-        ("{#foo#}{{bar}}", {"bar": 42}, False, ["42"]),
+        ("", {}, True, None, nullcontext([])),
+        ("foo", {}, True, None, nullcontext(["foo"])),
+        ("foo{{bar}}", {}, True, None, nullcontext(["foo", Expression("bar")])),
+        ("foo{{bar}}", {"bar": ""}, True, None, nullcontext(["foo"])),
+        ("{{foo}}bar", {"foo": ""}, True, None, nullcontext(["bar"])),
+        ("{{a}}{{b}}", {"a": 42}, True, None, nullcontext(["42", Expression("b")])),
+        ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(["42y"])),
+        ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext([Comment("foo"), "42"])),
+        ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(["42"])),
+        ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
+        ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(["None"])),
     ],
 )
 def test_substitute(
     source: str,
     sub: dict[str, Any],
     keep_comments: bool,
-    expected: list[str | Comment | Expression],
+    renderers: dict[type, Callable[[Any], str]] | None,
+    expected: ContextManager[list[str | Comment | Expression]],
 ):
-    assert (
-        Template(source).substitute(sub, keep_comments=keep_comments)._content  # pyright: ignore[reportPrivateUsage]
-        == expected
-    )
+    with expected as e:
+        t = Template(source)
+        assert (
+            t.substitute(
+                sub,
+                keep_comments=keep_comments,
+                renderers=renderers,
+            )._content  # pyright: ignore[reportPrivateUsage]
+            == e
+        )
 
 
 @pytest.mark.parametrize(
