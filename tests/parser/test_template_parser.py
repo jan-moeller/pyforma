@@ -1,6 +1,12 @@
 import pytest
 
-from pyforma._parser import ParseContext, template, Comment, Expression
+from pyforma._parser import (
+    ParseContext,
+    template,
+    Comment,
+    Expression,
+    TemplateSyntaxConfig,
+)
 
 
 @pytest.mark.parametrize(
@@ -17,6 +23,6 @@ from pyforma._parser import ParseContext, template, Comment, Expression
     ],
 )
 def test_template(source: str, expected: list[str | Comment], remaining: str):
-    result = template("{#", "#}", "{{", "}}")(ParseContext(source))
+    result = template(TemplateSyntaxConfig())(ParseContext(source))
     assert result.context[:] == remaining
     assert result.result == expected

@@ -7,6 +7,7 @@ from .identifier import identifier
 from .literal import literal
 from .sequence import sequence
 from .parser import Parser, parser
+from .template_syntax_config import BlockSyntaxConfig
 
 
 @dataclass(frozen=True)
@@ -16,27 +17,18 @@ class Expression:
     identifier: str  # TODO: extend expression definition
 
 
-def expression_block(open: str, close: str) -> Parser[Expression]:
+def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
     """Creates an expression block parser using the provided open and close markers
 
     Args:
-        open: The opening marker.
-        close: The closing marker.
+        syntax: The syntax config to use
 
     Returns:
         The expression block parser.
-
-    Raises:
-        ValueError: If the open and close markers are the same or one of them is empty.
     """
 
-    if open == close:
-        raise ValueError("open and close markers cannot be the same")
-    if len(open) == 0 or len(close) == 0:
-        raise ValueError("open and close markers cannot be empty")
-
     base_parser = sequence(
-        literal(open), whitespace, identifier, whitespace, literal(close)
+        literal(syntax.open), whitespace, identifier, whitespace, literal(syntax.close)
     )
 
     @parser

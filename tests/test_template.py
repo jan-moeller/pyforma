@@ -4,9 +4,10 @@ from typing import Any, ContextManager
 
 import pytest
 
-from pyforma import Template
+from pyforma import Template, TemplateSyntaxConfig
 from pyforma._parser import Expression, Comment
 from pyforma._parser.parse_error import ParseError
+from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
 
 @pytest.mark.parametrize(
@@ -72,6 +73,17 @@ def test_render(
 ):
     with expected as e:
         assert Template(source).render(sub) == e
+
+
+def test_init_with_custom_syntax():
+    template = Template(
+        "foo{{barbau/*comment*/no[[var]]bom#}",
+        syntax=TemplateSyntaxConfig(
+            comment=BlockSyntaxConfig("/*", "*/"),
+            expression=BlockSyntaxConfig("[[", "]]"),
+        ),
+    )
+    assert template.render(variables={"var": "test"}) == "foo{{barbaunotestbom#}"
 
 
 def test_init_from_path(monkeypatch: pytest.MonkeyPatch):

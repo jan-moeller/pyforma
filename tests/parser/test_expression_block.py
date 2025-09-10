@@ -4,6 +4,7 @@ from typing import ContextManager
 import pytest
 
 from pyforma._parser import ParseContext, ParseError, expression_block, Expression
+from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
 
 @pytest.mark.parametrize(
@@ -22,14 +23,6 @@ def test_expression_block(
     result_idx: int,
 ):
     with expected as e:
-        r = expression_block("{{", "}}")(ParseContext(source))
+        r = expression_block(BlockSyntaxConfig("{{", "}}"))(ParseContext(source))
         assert r.result == e
         assert r.context == ParseContext(source, result_idx)
-
-
-def test_invalid_input():
-    with pytest.raises(ValueError):
-        _ = expression_block("/", "/")
-
-    with pytest.raises(ValueError):
-        _ = expression_block("/", "")

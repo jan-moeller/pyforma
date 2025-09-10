@@ -1,7 +1,14 @@
 from pathlib import Path
 from typing import final, Any, cast
 
-from ._parser import ParseError, ParseContext, Expression, Comment, template
+from ._parser import (
+    ParseError,
+    ParseContext,
+    Expression,
+    Comment,
+    template,
+    TemplateSyntaxConfig,
+)
 
 
 @final
@@ -13,19 +20,13 @@ class Template:
         content: str | Path,
         /,
         *,
-        open_comment: str = "{#",
-        close_comment: str = "#}",
-        open_expression: str = "{{",
-        close_expression: str = "}}",
+        syntax: TemplateSyntaxConfig | None = None,
     ) -> None:
         """Initialize a templated text file
 
         Args:
             content: The contents of the template file as string, or a file path to read.
-            open_comment: The comment open indicator to use
-            close_comment: The comment close indicator to use
-            open_expression: The expression open indicator to use
-            close_expression: The expression close indicator to use
+            syntax: Syntax configuration if the default syntax is not applicable.
 
         Raises:
             ParseError: If the contents cannot be parsed
@@ -33,12 +34,10 @@ class Template:
         if isinstance(content, Path):
             content = content.read_text()
 
-        parse = template(
-            open_comment,
-            close_comment,
-            open_expression,
-            close_expression,
-        )
+        if syntax is None:
+            syntax = TemplateSyntaxConfig()
+
+        parse = template(syntax)
         result = parse(ParseContext(content))
         if not result.context.at_eof():
             raise ParseError(
