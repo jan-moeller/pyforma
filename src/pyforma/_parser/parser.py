@@ -1,15 +1,17 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import overload, Any, Annotated
+from typing import overload, Any, Annotated, TypeVar, Generic
 
 from annotated_types import MinLen
 
 from .parse_result import ParseResult
 from .parse_context import ParseContext
 
+T = TypeVar("T", covariant=True, default=Any)
+
 
 @dataclass(frozen=True)
-class Parser[T = Any]:
+class Parser(Generic[T]):
     """Concrete parser type"""
 
     parse: Callable[[ParseContext], ParseResult[T]]  # parser function
