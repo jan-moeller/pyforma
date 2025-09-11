@@ -1,12 +1,12 @@
 from .whitespace import whitespace
 from .parse_context import ParseContext
 from .parse_result import ParseResult
-from .identifier import identifier
 from .literal import literal
 from .sequence import sequence
 from .parser import Parser, parser
+from .expression import expression
 from .template_syntax_config import BlockSyntaxConfig
-from pyforma._ast.expression import Expression, IdentifierExpression
+from pyforma._ast.expression import Expression
 
 
 def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
@@ -20,12 +20,12 @@ def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
     """
 
     base_parser = sequence(
-        literal(syntax.open), whitespace, identifier, whitespace, literal(syntax.close)
+        literal(syntax.open), whitespace, expression, whitespace, literal(syntax.close)
     )
 
     @parser
-    def expression(context: ParseContext) -> ParseResult[Expression]:
+    def parse_expression_block(context: ParseContext) -> ParseResult[Expression]:
         r = base_parser(context)
-        return ParseResult(context=r.context, result=IdentifierExpression(r.result[2]))
+        return ParseResult(context=r.context, result=r.result[2])
 
-    return expression
+    return parse_expression_block
