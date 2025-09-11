@@ -21,11 +21,11 @@ class ValueExpression(Expression):
 
     @override
     def identifiers(self) -> set[str]:
-        return set()  # pragma: nocover # TODO: add coverage
+        return set()
 
     @override
     def substitute(self, variables: dict[str, Any]) -> Expression:
-        return self  # pragma: nocover # TODO: add coverage
+        return self
 
 
 @dataclass(frozen=True)

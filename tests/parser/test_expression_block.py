@@ -3,7 +3,7 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._ast.expression import IdentifierExpression
+from pyforma._ast.expression import IdentifierExpression, ValueExpression
 from pyforma._parser import (
     ParseContext,
     ParseError,
@@ -19,6 +19,7 @@ from pyforma._parser import (
         ("{{foo}}", nullcontext(IdentifierExpression("foo")), 7),
         ("{{ foo }}", nullcontext(IdentifierExpression("foo")), 9),
         ("{{ foo }}bar", nullcontext(IdentifierExpression("foo")), 9),
+        ("{{'foo'}}bar", nullcontext(ValueExpression("foo")), 9),
         ("{{ foo", pytest.raises(ParseError), 0),
     ],
 )

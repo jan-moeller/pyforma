@@ -19,6 +19,7 @@ from pyforma._parser.template_syntax_config import BlockSyntaxConfig
         ("foo{{bar}}", {"bar"}),
         ("{{foo}}{{bar}}", {"foo", "bar"}),
         ("{#foo#}{{bar}}", {"bar"}),
+        ("{{'bar'}}", set()),
     ],
 )
 def test_unresolved_identifiers(
@@ -54,6 +55,7 @@ def test_unresolved_identifiers(
         ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(["42"])),
         ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
         ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(["None"])),
+        ("{{'bar'}}", {}, False, None, nullcontext(["bar"])),
     ],
 )
 def test_substitute(
