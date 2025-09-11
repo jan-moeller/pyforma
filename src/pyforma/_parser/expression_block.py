@@ -6,7 +6,7 @@ from .literal import literal
 from .sequence import sequence
 from .parser import Parser, parser
 from .template_syntax_config import BlockSyntaxConfig
-from pyforma._ast.expression import Expression
+from pyforma._ast.expression import Expression, IdentifierExpression
 
 
 def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
@@ -26,6 +26,6 @@ def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
     @parser
     def expression(context: ParseContext) -> ParseResult[Expression]:
         r = base_parser(context)
-        return ParseResult(context=r.context, result=Expression(r.result[2]))
+        return ParseResult(context=r.context, result=IdentifierExpression(r.result[2]))
 
     return expression

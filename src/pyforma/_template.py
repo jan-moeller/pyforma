@@ -2,7 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import final, Any, cast
 
-from ._ast import Expression, Comment
+from ._ast import Expression, Comment, ValueExpression
 from ._parser import (
     ParseError,
     ParseContext,
@@ -55,7 +55,11 @@ class Template:
     def unresolved_identifiers(self) -> set[str]:
         """Provides access to the set of unresolved identifiers in this template"""
 
-        return {e.identifier for e in self._content if isinstance(e, Expression)}
+        ids = [e.identifiers() for e in self._content if isinstance(e, Expression)]
+        identifiers: set[str] = set()
+        for s in ids:
+            identifiers.update(s)
+        return identifiers
 
     def substitute(
         self,
@@ -83,14 +87,11 @@ class Template:
 
         result = Template("")
 
-        def render(identifier: str) -> str:
-            v = variables[identifier]
+        def render(v: str) -> str:
             try:
                 return renderers[type(v)](v)
             except KeyError as e:
-                raise ValueError(
-                    f"No renderer for variable {identifier} of type {type(v)}"
-                ) from e
+                raise ValueError(f"No renderer for value of type {type(v)}") from e
 
         def append_str(s: str):
             if len(result._content) > 0 and isinstance(result._content[-1], str):
@@ -101,8 +102,9 @@ class Template:
         for elem in self._content:
             match elem:
                 case Expression():
-                    if elem.identifier in variables:
-                        append_str(render(elem.identifier))
+                    elem = elem.substitute(variables)
+                    if isinstance(elem, ValueExpression):
+                        append_str(render(elem.value))
                     else:
                         result._content.append(elem)
                 case Comment() if keep_comments:

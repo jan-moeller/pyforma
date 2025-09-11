@@ -1,2 +1,4 @@
 from .comment import Comment as Comment
 from .expression import Expression as Expression
+from .expression import ValueExpression as ValueExpression
+from .expression import IdentifierExpression as IdentifierExpression

@@ -1,6 +1,6 @@
 import pytest
 
-from pyforma._ast import Expression, Comment
+from pyforma._ast import Comment, IdentifierExpression
 from pyforma._parser import (
     ParseContext,
     template,
@@ -16,7 +16,7 @@ from pyforma._parser import (
         ("foo {#bar#}baz", ["foo ", Comment("bar"), "baz"], ""),
         (
             "foo {#bar#}{{baz}} bam",
-            ["foo ", Comment("bar"), Expression("baz"), " bam"],
+            ["foo ", Comment("bar"), IdentifierExpression("baz"), " bam"],
             "",
         ),
     ],

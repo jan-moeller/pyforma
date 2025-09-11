@@ -3,17 +3,22 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._ast import Expression
-from pyforma._parser import ParseContext, ParseError, expression_block, BlockSyntaxConfig
+from pyforma._ast.expression import IdentifierExpression
+from pyforma._parser import (
+    ParseContext,
+    ParseError,
+    expression_block,
+    BlockSyntaxConfig,
+)
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
         ("", pytest.raises(ParseError), 0),
-        ("{{foo}}", nullcontext(Expression("foo")), 7),
-        ("{{ foo }}", nullcontext(Expression("foo")), 9),
-        ("{{ foo }}bar", nullcontext(Expression("foo")), 9),
+        ("{{foo}}", nullcontext(IdentifierExpression("foo")), 7),
+        ("{{ foo }}", nullcontext(IdentifierExpression("foo")), 9),
+        ("{{ foo }}bar", nullcontext(IdentifierExpression("foo")), 9),
         ("{{ foo", pytest.raises(ParseError), 0),
     ],
 )

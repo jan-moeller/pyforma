@@ -6,7 +6,7 @@ from typing import Any, ContextManager
 import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
-from pyforma._ast import Expression, Comment
+from pyforma._ast import Expression, Comment, IdentifierExpression
 from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -33,10 +33,22 @@ def test_unresolved_identifiers(
     [
         ("", {}, True, None, nullcontext([])),
         ("foo", {}, True, None, nullcontext(["foo"])),
-        ("foo{{bar}}", {}, True, None, nullcontext(["foo", Expression("bar")])),
+        (
+            "foo{{bar}}",
+            {},
+            True,
+            None,
+            nullcontext(["foo", IdentifierExpression("bar")]),
+        ),
         ("foo{{bar}}", {"bar": ""}, True, None, nullcontext(["foo"])),
         ("{{foo}}bar", {"foo": ""}, True, None, nullcontext(["bar"])),
-        ("{{a}}{{b}}", {"a": 42}, True, None, nullcontext(["42", Expression("b")])),
+        (
+            "{{a}}{{b}}",
+            {"a": 42},
+            True,
+            None,
+            nullcontext(["42", IdentifierExpression("b")]),
+        ),
         ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(["42y"])),
         ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext([Comment("foo"), "42"])),
         ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(["42"])),
