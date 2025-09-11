@@ -1,10 +1,9 @@
 import pytest
 
+from pyforma._ast import Expression, Comment
 from pyforma._parser import (
     ParseContext,
     template,
-    Comment,
-    Expression,
     TemplateSyntaxConfig,
 )
 

@@ -3,7 +3,8 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._parser import ParseContext, ParseError, comment, Comment
+from pyforma._ast import Comment
+from pyforma._parser import ParseContext, ParseError, comment
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
 

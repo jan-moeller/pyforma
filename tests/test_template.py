@@ -6,7 +6,7 @@ from typing import Any, ContextManager
 import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
-from pyforma._parser import Expression, Comment
+from pyforma._ast import Expression, Comment
 from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 

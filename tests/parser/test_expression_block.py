@@ -3,8 +3,8 @@ from typing import ContextManager
 
 import pytest
 
-from pyforma._parser import ParseContext, ParseError, expression_block, Expression
-from pyforma._parser.template_syntax_config import BlockSyntaxConfig
+from pyforma._ast import Expression
+from pyforma._parser import ParseContext, ParseError, expression_block, BlockSyntaxConfig
 
 
 @pytest.mark.parametrize(

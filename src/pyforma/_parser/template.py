@@ -1,11 +1,13 @@
-from .expression_block import expression_block, Expression
+from .expression_block import expression_block
 from .non_empty import non_empty
 from .alternation import alternation
 from .text import text
 from .repetition import repetition
 from .parser import Parser
-from .comment import Comment, comment
+from .comment import comment
 from .template_syntax_config import TemplateSyntaxConfig
+from pyforma._ast.expression import Expression
+from pyforma._ast.comment import Comment
 
 
 def template(syntax: TemplateSyntaxConfig) -> Parser[list[str | Comment | Expression]]:

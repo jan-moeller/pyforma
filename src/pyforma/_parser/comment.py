@@ -1,17 +1,9 @@
-from dataclasses import dataclass
-
 from .template_syntax_config import BlockSyntaxConfig
 from .parser import parser, Parser
 from .parse_context import ParseContext
 from .parse_error import ParseError
 from .parse_result import ParseResult
-
-
-@dataclass
-class Comment:
-    """Tagged string for comments."""
-
-    text: str
+from pyforma._ast import Comment
 
 
 def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:

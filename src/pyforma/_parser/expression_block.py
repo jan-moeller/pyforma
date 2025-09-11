@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from .whitespace import whitespace
 from .parse_context import ParseContext
 from .parse_result import ParseResult
@@ -8,13 +6,7 @@ from .literal import literal
 from .sequence import sequence
 from .parser import Parser, parser
 from .template_syntax_config import BlockSyntaxConfig
-
-
-@dataclass(frozen=True)
-class Expression:
-    """Holds a pyforma expression."""
-
-    identifier: str  # TODO: extend expression definition
+from pyforma._ast.expression import Expression
 
 
 def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:

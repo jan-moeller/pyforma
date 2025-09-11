@@ -2,11 +2,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import final, Any, cast
 
+from ._ast import Expression, Comment
 from ._parser import (
     ParseError,
     ParseContext,
-    Expression,
-    Comment,
     template,
     TemplateSyntaxConfig,
 )

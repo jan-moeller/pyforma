@@ -11,13 +11,11 @@ from .literal import literal as literal
 from .sequence import sequence as sequence
 from .alternation import alternation as alternation
 from .comment import comment as comment
-from .comment import Comment as Comment
 from .not_in import not_in as not_in
 from .text import text as text
 from .repetition import repetition as repetition
 from .template import template as template
 from .identifier import identifier as identifier
 from .expression_block import expression_block as expression_block
-from .expression_block import Expression as Expression
 from .template_syntax_config import TemplateSyntaxConfig as TemplateSyntaxConfig
 from .template_syntax_config import BlockSyntaxConfig as BlockSyntaxConfig
