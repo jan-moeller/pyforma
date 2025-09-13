@@ -1,3 +1,5 @@
+import ast
+
 from .literal import literal
 from .not_in import not_in
 from .parse_error import ParseError
@@ -37,4 +39,7 @@ def string_literal_expression(context: ParseContext) -> ParseResult[ValueExpress
 
     cur_context = cur_context.consume()
 
-    return ParseResult(result=ValueExpression(text_result.result), context=cur_context)
+    return ParseResult(
+        result=ValueExpression(ast.literal_eval(f"{delim}{text_result.result}{delim}")),
+        context=cur_context,
+    )
