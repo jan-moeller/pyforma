@@ -18,6 +18,11 @@ from pyforma._parser.expression import expression
         ("'foo ' bar", nullcontext(ValueExpression("foo ")), 6),
         ('"foo " bar', nullcontext(ValueExpression("foo ")), 6),
         (r'"foo\nbar"', nullcontext(ValueExpression("foo\nbar")), 10),
+        ("42", nullcontext(ValueExpression(42)), 2),
+        ("1_000", nullcontext(ValueExpression(1000)), 5),
+        ("0xdeadbeef", nullcontext(ValueExpression(0xDEADBEEF)), 10),
+        ("0o1234", nullcontext(ValueExpression(0o1234)), 6),
+        ("0b0010", nullcontext(ValueExpression(0b0010)), 6),
         (
             "-a",
             nullcontext(UnOpExpression(op="-", operand=IdentifierExpression("a"))),

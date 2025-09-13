@@ -6,6 +6,10 @@ from .parser import ParserDecorator as ParserDecorator
 from .parse_error import ParseError as ParseError
 from .munch import munch as munch
 from .whitespace import whitespace as whitespace
+from .digits import digits as digits
+from .digits import hexdigits as hexdigits
+from .digits import octdigits as octdigits
+from .digits import bindigits as bindigits
 from .non_empty import non_empty as non_empty
 from .literal import literal as literal
 from .sequence import sequence as sequence
