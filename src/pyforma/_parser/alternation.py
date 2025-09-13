@@ -56,6 +56,45 @@ def alternation[T1, T2, T3, T4, T5](
 
 
 @overload
+def alternation[T1, T2, T3, T4, T5, T6](
+    p1: Parser[T1],
+    p2: Parser[T2],
+    p3: Parser[T3],
+    p4: Parser[T4],
+    p5: Parser[T5],
+    p6: Parser[T6],
+    /,
+) -> Parser[T1 | T2 | T3 | T4 | T5 | T6]: ...
+
+
+@overload
+def alternation[T1, T2, T3, T4, T5, T6, T7](
+    p1: Parser[T1],
+    p2: Parser[T2],
+    p3: Parser[T3],
+    p4: Parser[T4],
+    p5: Parser[T5],
+    p6: Parser[T6],
+    p7: Parser[T7],
+    /,
+) -> Parser[T1 | T2 | T3 | T4 | T5 | T6 | T7]: ...
+
+
+@overload
+def alternation[T1, T2, T3, T4, T5, T6, T7, T8](
+    p1: Parser[T1],
+    p2: Parser[T2],
+    p3: Parser[T3],
+    p4: Parser[T4],
+    p5: Parser[T5],
+    p6: Parser[T6],
+    p7: Parser[T7],
+    p8: Parser[T8],
+    /,
+) -> Parser[T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8]: ...
+
+
+@overload
 def alternation(*parsers: Parser) -> Parser: ...
 
 
