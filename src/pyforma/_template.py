@@ -111,10 +111,8 @@ class Template:
                     result._content.append(elem)
                 case Comment():
                     continue
-                case str():
+                case str():  # pragma: no branch
                     append_str(elem)
-                case _:  # pyright: ignore[reportUnnecessaryComparison]
-                    raise TypeError(f"Unexpected type {type(elem)}")  # pyright: ignore[reportUnreachable]
 
         return result
 

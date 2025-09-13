@@ -17,13 +17,7 @@ class ParseContext:
 
     def __getitem__(self, item: int | slice) -> str:
         """Provides indexing and slicing of the remaining input"""
-        match item:
-            case int() | slice():
-                return self.source[self.index :].__getitem__(item)
-            case _:  # pyright: ignore[reportUnnecessaryComparison]
-                raise TypeError(  # pyright: ignore[reportUnreachable]
-                    f"ParseContext indices must be integers, not {type(item)}"
-                )
+        return self.source[self.index :].__getitem__(item)
 
     def __len__(self) -> int:
         """Provides the length of the remaining input"""

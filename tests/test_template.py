@@ -119,12 +119,3 @@ def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
 def test_init_from_invalid():
     with pytest.raises(ParseError):
         _ = Template("foo{{barbau{{")
-
-
-def test_willfully_borked_template():
-    """Make sure we have safety check in place that will raise TypeError in case of unexpected template type"""
-
-    t = Template("")
-    t._content.append(42)  # pyright: ignore[reportPrivateUsage,reportArgumentType]
-    with pytest.raises(TypeError):
-        _ = t.substitute({})
