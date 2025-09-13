@@ -1,5 +1,4 @@
 from pyforma._ast import Expression, BinOpExpression, UnOpExpression
-from .integer_literal_expression import integer_literal_expression
 from .repetition import repetition
 from .whitespace import whitespace
 from .sequence import sequence
@@ -10,6 +9,8 @@ from .parser import Parser, parser
 from .alternation import alternation
 from .identifier_expression import identifier_expression
 from .string_literal_expression import string_literal_expression
+from .integer_literal_expression import integer_literal_expression
+from .floating_point_literal_expression import floating_point_literal_expression
 
 
 @parser
@@ -25,6 +26,7 @@ def paren_expression(context: ParseContext) -> ParseResult[Expression]:
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
     string_literal_expression,
+    floating_point_literal_expression,
     integer_literal_expression,
     paren_expression,
 )

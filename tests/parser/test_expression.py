@@ -23,6 +23,11 @@ from pyforma._parser.expression import expression
         ("0xdeadbeef", nullcontext(ValueExpression(0xDEADBEEF)), 10),
         ("0o1234", nullcontext(ValueExpression(0o1234)), 6),
         ("0b0010", nullcontext(ValueExpression(0b0010)), 6),
+        ("1.", nullcontext(ValueExpression(1.0)), 2),
+        ("1.234", nullcontext(ValueExpression(1.234)), 5),
+        ("1_000.234_567", nullcontext(ValueExpression(1000.234567)), 13),
+        ("1e3", nullcontext(ValueExpression(1e3)), 3),
+        ("1e-3", nullcontext(ValueExpression(1e-3)), 4),
         (
             "-a",
             nullcontext(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
