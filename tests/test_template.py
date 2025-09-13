@@ -7,7 +7,7 @@ import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
-from pyforma._ast.expression import BinOpExpression, ValueExpression
+from pyforma._ast.expression import BinOpExpression, UnOpExpression, ValueExpression
 from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -31,6 +31,7 @@ class Vec:
         ("{{foo}}{{bar}}", {"foo", "bar"}),
         ("{#foo#}{{bar}}", {"bar"}),
         ("{{'bar'}}", set()),
+        ("{{+-~bar}}", {"bar"}),
         ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
     ],
 )
@@ -68,6 +69,28 @@ def test_unresolved_identifiers(
         ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
         ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(["None"])),
         ("{{'bar'}}", {}, False, None, nullcontext(["bar"])),
+        ("{{+a}}", {"a": 1}, False, None, nullcontext(["1"])),
+        ("{{-a}}", {"a": 1}, False, None, nullcontext(["-1"])),
+        ("{{~a}}", {"a": 0b0101}, False, None, nullcontext(["-6"])),
+        ("{{not a}}", {"a": True}, False, {bool: str}, nullcontext(["False"])),
+        (
+            "{{-a+b}}",
+            {"b": 1},
+            False,
+            None,
+            nullcontext(
+                [
+                    BinOpExpression(
+                        op="+",
+                        lhs=UnOpExpression(
+                            op="-",
+                            operand=IdentifierExpression("a"),
+                        ),
+                        rhs=ValueExpression(1),
+                    )
+                ]
+            ),
+        ),
         ("{{a+'b'}}", {"a": "fo"}, False, None, nullcontext(["fob"])),
         ("{{a**b}}", {"a": 3, "b": 2}, False, None, nullcontext(["9"])),
         ("{{a+b}}", {"a": 1, "b": 2}, False, None, nullcontext(["3"])),

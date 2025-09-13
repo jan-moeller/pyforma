@@ -4,7 +4,7 @@ from typing import ContextManager
 import pytest
 
 from pyforma._ast import IdentifierExpression, ValueExpression
-from pyforma._ast.expression import BinOpExpression
+from pyforma._ast.expression import BinOpExpression, UnOpExpression
 from pyforma._parser import ParseContext, ParseError
 from pyforma._parser.expression import expression
 
@@ -17,6 +17,21 @@ from pyforma._parser.expression import expression
         ("foo bar", nullcontext(IdentifierExpression("foo")), 3),
         ("'foo ' bar", nullcontext(ValueExpression("foo ")), 6),
         ('"foo " bar', nullcontext(ValueExpression("foo ")), 6),
+        (
+            "-a",
+            nullcontext(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
+            2,
+        ),
+        (
+            "--a",
+            nullcontext(
+                UnOpExpression(
+                    op="-",
+                    operand=UnOpExpression(op="-", operand=IdentifierExpression("a")),
+                )
+            ),
+            3,
+        ),
         (
             'a+"b"',
             nullcontext(
@@ -67,7 +82,7 @@ from pyforma._parser.expression import expression
             13,
         ),
         (
-            "a and b or c in d ** e ^ f & g << h + i * j | k",
+            "a and b or c in d ** e ^ f & g << h + -i * j | k",
             nullcontext(
                 BinOpExpression(
                     op="or",
@@ -99,7 +114,10 @@ from pyforma._parser.expression import expression
                                             lhs=IdentifierExpression("h"),
                                             rhs=BinOpExpression(
                                                 op="*",
-                                                lhs=IdentifierExpression("i"),
+                                                lhs=UnOpExpression(
+                                                    op="-",
+                                                    operand=IdentifierExpression("i"),
+                                                ),
                                                 rhs=IdentifierExpression("j"),
                                             ),
                                         ),
@@ -111,7 +129,7 @@ from pyforma._parser.expression import expression
                     ),
                 )
             ),
-            47,
+            48,
         ),
         ('"foo', pytest.raises(ParseError), 0),
     ],

@@ -46,6 +46,34 @@ class IdentifierExpression(Expression):
 
 
 @dataclass(frozen=True)
+class UnOpExpression(Expression):
+    """Unary operator expression"""
+
+    op: Literal["+", "-", "~", "not"]
+    operand: Expression
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.operand.identifiers()
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> "Expression":
+        operand = self.operand.substitute(variables)
+        if isinstance(operand, ValueExpression):
+            match self.op:
+                case "+":
+                    return ValueExpression(+operand.value)
+                case "-":
+                    return ValueExpression(-operand.value)
+                case "~":
+                    return ValueExpression(~operand.value)
+                case "not":  # pragma: no branch
+                    return ValueExpression(not operand.value)
+
+        return UnOpExpression(op=self.op, operand=operand)
+
+
+@dataclass(frozen=True)
 class BinOpExpression(Expression):
     """Binary operator expression"""
 

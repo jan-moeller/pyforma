@@ -1,4 +1,4 @@
-from pyforma._ast import Expression, BinOpExpression
+from pyforma._ast import Expression, BinOpExpression, UnOpExpression
 from .repetition import repetition
 from .whitespace import whitespace
 from .sequence import sequence
@@ -16,11 +16,40 @@ simple_expression: Parser[Expression] = alternation(
 )
 
 
+def _unop_expression(
+    base_expr: Parser[Expression],
+    *operators: str,
+) -> Parser[Expression]:
+    """Implements generic unary operator parsing"""
+    op_parsers = tuple(literal(op) for op in operators)
+
+    @parser
+    def parse_unary_expression(context: ParseContext) -> ParseResult[Expression]:
+        parser = alternation(
+            sequence(
+                alternation(*op_parsers),
+                whitespace,
+                parse_unary_expression,
+            ),
+            base_expr,
+        )
+        r = parser(context)
+        if isinstance(r.result, tuple):
+            return ParseResult(
+                result=UnOpExpression(op=r.result[0], operand=r.result[2]),
+                context=r.context,
+            )
+        return ParseResult(result=r.result, context=r.context)
+
+    return parse_unary_expression
+
+
 def _binop_expression(
-    base_expr: Parser[Expression], *operators: str
+    base_expr: Parser[Expression],
+    *operators: str,
 ) -> Parser[Expression]:
     """Implements generic binary operator parsing"""
-    op_parsers = (literal(op) for op in operators)
+    op_parsers = tuple(literal(op) for op in operators)
 
     base_parser = sequence(
         base_expr,
@@ -56,8 +85,11 @@ def expression(context: ParseContext) -> ParseResult[Expression]:
     """Parse an expression."""
 
     power_expression: Parser[Expression] = _binop_expression(simple_expression, "**")
+    factor_expression: Parser[Expression] = _unop_expression(
+        power_expression, "+", "-", "~"
+    )
     term_expression: Parser[Expression] = _binop_expression(
-        power_expression, "*", "//", "/", "%", "@"
+        factor_expression, "*", "//", "/", "%", "@"
     )
     sum_expression: Parser[Expression] = _binop_expression(term_expression, "+", "-")
     shift_expression: Parser[Expression] = _binop_expression(sum_expression, "<<", ">>")
@@ -67,8 +99,12 @@ def expression(context: ParseContext) -> ParseResult[Expression]:
     in_expression: Parser[Expression] = _binop_expression(
         bw_or_expression, "in", "not in"
     )
-    conjunction_expression: Parser[Expression] = _binop_expression(in_expression, "and")
+    inversion_expression: Parser[Expression] = _unop_expression(in_expression, "not")
+    conjunction_expression: Parser[Expression] = _binop_expression(
+        inversion_expression, "and"
+    )
     disjunction_expression: Parser[Expression] = _binop_expression(
         conjunction_expression, "or"
     )
+
     return disjunction_expression(context)
