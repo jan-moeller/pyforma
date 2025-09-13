@@ -19,3 +19,4 @@ from .identifier import identifier as identifier
 from .expression_block import expression_block as expression_block
 from .template_syntax_config import TemplateSyntaxConfig as TemplateSyntaxConfig
 from .template_syntax_config import BlockSyntaxConfig as BlockSyntaxConfig
+from .option import option as option
