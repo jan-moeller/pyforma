@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import override, Any, Literal
+from typing import override, Any, Literal, cast
 
 
 class Expression(ABC):
@@ -163,3 +163,51 @@ class BinOpExpression(Expression):
                     return ValueExpression(lhs.value or rhs.value)
         else:
             return BinOpExpression(self.op, lhs, rhs)
+
+
+@dataclass(frozen=True)
+class IndexExpression(Expression):
+    """Slice expression"""
+
+    expression: Expression
+    index: Expression
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.expression.identifiers() | self.index.identifiers()
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> Expression:
+        expression = self.expression.substitute(variables)
+        index = self.index.substitute(variables)
+        if isinstance(expression, ValueExpression) and isinstance(
+            index, ValueExpression
+        ):
+            return ValueExpression(expression.value[index.value])
+        return IndexExpression(expression, index)
+
+
+@dataclass(frozen=True)
+class CallExpression(Expression):
+    """Call expression"""
+
+    callee: Expression
+    arguments: list[Expression]
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.callee.identifiers().union(
+            *[arg.identifiers() for arg in self.arguments]
+        )
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> Expression:
+        callee = self.callee.substitute(variables)
+        arguments = [arg.substitute(variables) for arg in self.arguments]
+
+        if isinstance(callee, ValueExpression) and all(
+            isinstance(arg, ValueExpression) for arg in arguments
+        ):
+            values = [cast(ValueExpression, arg).value for arg in arguments]
+            return ValueExpression(callee.value(*values))
+        return CallExpression(callee, arguments)

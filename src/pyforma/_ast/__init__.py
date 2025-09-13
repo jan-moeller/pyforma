@@ -4,3 +4,5 @@ from .expression import ValueExpression as ValueExpression
 from .expression import IdentifierExpression as IdentifierExpression
 from .expression import UnOpExpression as UnOpExpression
 from .expression import BinOpExpression as BinOpExpression
+from .expression import IndexExpression as IndexExpression
+from .expression import CallExpression as CallExpression

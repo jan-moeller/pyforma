@@ -1,4 +1,12 @@
-from pyforma._ast import Expression, BinOpExpression, UnOpExpression
+from pyforma._ast import (
+    Expression,
+    BinOpExpression,
+    UnOpExpression,
+    CallExpression,
+    IndexExpression,
+    ValueExpression,
+)
+from .option import option
 from .repetition import repetition
 from .whitespace import whitespace
 from .sequence import sequence
@@ -30,6 +38,45 @@ simple_expression: Parser[Expression] = alternation(
     integer_literal_expression,
     paren_expression,
 )
+
+
+@parser
+def primary_expression(context: ParseContext) -> ParseResult[Expression]:
+    _slice = sequence(
+        option(expression),
+        whitespace,
+        literal(":"),
+        whitespace,
+        option(expression),
+        option(sequence(whitespace, literal(":"), option(expression))),
+    )
+    indexing = sequence(
+        literal("["),
+        whitespace,
+        alternation(_slice, expression),
+        whitespace,
+        literal("]"),
+    )
+    p = sequence(simple_expression, repetition(sequence(whitespace, indexing)))
+    r = p(context)
+
+    if len(r.result[1]) == 0:
+        return ParseResult(result=r.result[0], context=r.context)
+
+    expr = r.result[0]
+    for e in r.result[1]:
+        index = e[1][2]
+        if isinstance(index, Expression):
+            expr = IndexExpression(expr, index)
+        else:  # slice
+            args = [index[0], index[4], index[5][2] if index[5] else None]
+            s = CallExpression(
+                callee=ValueExpression(slice),
+                arguments=[a if a else ValueExpression(None) for a in args],
+            )
+            expr = IndexExpression(expr, s)
+
+    return ParseResult(result=expr, context=r.context)
 
 
 def _unop_expression(
@@ -152,7 +199,7 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
 def expression(context: ParseContext) -> ParseResult[Expression]:
     """Parse an expression."""
 
-    power_expression: Parser[Expression] = _binop_expression(simple_expression, "**")
+    power_expression: Parser[Expression] = _binop_expression(primary_expression, "**")
     factor_expression: Parser[Expression] = _unop_expression(
         power_expression, "+", "-", "~"
     )

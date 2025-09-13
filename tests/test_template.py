@@ -7,7 +7,13 @@ import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
-from pyforma._ast.expression import BinOpExpression, UnOpExpression, ValueExpression
+from pyforma._ast.expression import (
+    BinOpExpression,
+    UnOpExpression,
+    ValueExpression,
+    IndexExpression,
+    CallExpression,
+)
 from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -33,6 +39,7 @@ class Vec:
         ("{{'bar'}}", set()),
         ("{{+-~bar}}", {"bar"}),
         ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
+        ("{{a[b][c:d:e]}}", {"a", "b", "c", "d", "e"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -155,6 +162,46 @@ def test_unresolved_identifiers(
                             op="*",
                             lhs=ValueExpression(1),
                             rhs=IdentifierExpression("c"),
+                        ),
+                    )
+                ]
+            ),
+        ),
+        ("{{a[0]}}", {"a": [1, 2]}, False, None, nullcontext(["1"])),
+        ("{{a[:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(["[1, 2]"])),
+        ("{{a[1:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(["[2]"])),
+        ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[2]"])),
+        ("{{a[:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[1, 2]"])),
+        ("{{a[::2]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[1, 3]"])),
+        (
+            "{{a[b]}}",
+            {"a": [1]},
+            False,
+            None,
+            nullcontext(
+                [
+                    IndexExpression(
+                        expression=ValueExpression([1]), index=IdentifierExpression("b")
+                    )
+                ]
+            ),
+        ),
+        (
+            "{{a[b:]}}",
+            {},
+            False,
+            None,
+            nullcontext(
+                [
+                    IndexExpression(
+                        expression=IdentifierExpression("a"),
+                        index=CallExpression(
+                            callee=ValueExpression(slice),
+                            arguments=[
+                                IdentifierExpression("b"),
+                                ValueExpression(None),
+                                ValueExpression(None),
+                            ],
                         ),
                     )
                 ]

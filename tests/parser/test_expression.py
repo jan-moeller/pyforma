@@ -4,7 +4,12 @@ from typing import ContextManager
 import pytest
 
 from pyforma._ast import IdentifierExpression, ValueExpression
-from pyforma._ast.expression import BinOpExpression, UnOpExpression
+from pyforma._ast.expression import (
+    BinOpExpression,
+    CallExpression,
+    IndexExpression,
+    UnOpExpression,
+)
 from pyforma._parser import ParseContext, ParseError
 from pyforma._parser.expression import expression
 
@@ -185,6 +190,35 @@ from pyforma._parser.expression import expression
                 )
             ),
             9,
+        ),
+        (
+            "a[0]",
+            nullcontext(
+                IndexExpression(
+                    expression=IdentifierExpression("a"), index=ValueExpression(0)
+                )
+            ),
+            4,
+        ),
+        (
+            "a[:][b]",
+            nullcontext(
+                IndexExpression(
+                    expression=IndexExpression(
+                        expression=IdentifierExpression("a"),
+                        index=CallExpression(
+                            callee=ValueExpression(slice),
+                            arguments=[
+                                ValueExpression(None),
+                                ValueExpression(None),
+                                ValueExpression(None),
+                            ],
+                        ),
+                    ),
+                    index=IdentifierExpression("b"),
+                )
+            ),
+            7,
         ),
         ('"foo', pytest.raises(ParseError), 0),
     ],
