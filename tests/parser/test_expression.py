@@ -28,6 +28,8 @@ from pyforma._parser.expression import expression
         ("1_000.234_567", nullcontext(ValueExpression(1000.234567)), 13),
         ("1e3", nullcontext(ValueExpression(1e3)), 3),
         ("1e-3", nullcontext(ValueExpression(1e-3)), 4),
+        ("True", nullcontext(ValueExpression(True)), 4),
+        ("False", nullcontext(ValueExpression(False)), 5),
         (
             "-a",
             nullcontext(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
