@@ -1,14 +1,25 @@
 from collections.abc import Callable
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Any, ContextManager
+from typing import Any, ContextManager, final
 
 import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
+from pyforma._ast.expression import BinOpExpression, ValueExpression
 from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
+
+
+@final
+class Vec:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def __matmul__(self, other: "Vec") -> int:
+        return self.x * other.x + self.y * other.y
 
 
 @pytest.mark.parametrize(
@@ -20,6 +31,7 @@ from pyforma._parser.template_syntax_config import BlockSyntaxConfig
         ("{{foo}}{{bar}}", {"foo", "bar"}),
         ("{#foo#}{{bar}}", {"bar"}),
         ("{{'bar'}}", set()),
+        ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -56,6 +68,61 @@ def test_unresolved_identifiers(
         ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
         ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(["None"])),
         ("{{'bar'}}", {}, False, None, nullcontext(["bar"])),
+        ("{{a+'b'}}", {"a": "fo"}, False, None, nullcontext(["fob"])),
+        ("{{a**b}}", {"a": 3, "b": 2}, False, None, nullcontext(["9"])),
+        ("{{a+b}}", {"a": 1, "b": 2}, False, None, nullcontext(["3"])),
+        ("{{a-b}}", {"a": 2, "b": 1}, False, None, nullcontext(["1"])),
+        ("{{a*b}}", {"a": 2, "b": 1}, False, None, nullcontext(["2"])),
+        ("{{a/b}}", {"a": 1, "b": 2}, False, None, nullcontext(["0.5"])),
+        ("{{a//b}}", {"a": 1, "b": 2}, False, None, nullcontext(["0"])),
+        ("{{a%b}}", {"a": 3, "b": 2}, False, None, nullcontext(["1"])),
+        ("{{a@b}}", {"a": Vec(1, 2), "b": Vec(3, 4)}, False, None, nullcontext(["11"])),
+        ("{{a<<b}}", {"a": 0b1, "b": 1}, False, None, nullcontext(["2"])),
+        ("{{a>>b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(["1"])),
+        ("{{a&b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(["0"])),
+        ("{{a^b}}", {"a": 0b10, "b": 0b11}, False, None, nullcontext(["1"])),
+        ("{{a|b}}", {"a": 0b10, "b": 0b01}, False, None, nullcontext(["3"])),
+        ("{{a in b}}", {"a": 1, "b": []}, False, {bool: str}, nullcontext(["False"])),
+        (
+            "{{a and b}}",
+            {"a": True, "b": False},
+            False,
+            {bool: str},
+            nullcontext(["False"]),
+        ),
+        (
+            "{{a or b}}",
+            {"a": True, "b": False},
+            False,
+            {bool: str},
+            nullcontext(["True"]),
+        ),
+        (
+            "{{a not in b}}",
+            {"a": 1, "b": []},
+            False,
+            {bool: str},
+            nullcontext(["True"]),
+        ),
+        (
+            "{{a+b*c}}",
+            {"b": 1},
+            False,
+            None,
+            nullcontext(
+                [
+                    BinOpExpression(
+                        op="+",
+                        lhs=IdentifierExpression("a"),
+                        rhs=BinOpExpression(
+                            op="*",
+                            lhs=ValueExpression(1),
+                            rhs=IdentifierExpression("c"),
+                        ),
+                    )
+                ]
+            ),
+        ),
     ],
 )
 def test_substitute(
