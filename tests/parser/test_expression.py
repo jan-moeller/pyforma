@@ -131,6 +131,21 @@ from pyforma._parser.expression import expression
             ),
             48,
         ),
+        (
+            "(a+b)*c",
+            nullcontext(
+                BinOpExpression(
+                    op="*",
+                    lhs=BinOpExpression(
+                        op="+",
+                        lhs=IdentifierExpression("a"),
+                        rhs=IdentifierExpression("b"),
+                    ),
+                    rhs=IdentifierExpression("c"),
+                )
+            ),
+            7,
+        ),
         ('"foo', pytest.raises(ParseError), 0),
     ],
 )

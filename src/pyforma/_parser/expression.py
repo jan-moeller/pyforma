@@ -10,9 +10,21 @@ from .alternation import alternation
 from .identifier_expression import identifier_expression
 from .string_literal_expression import string_literal_expression
 
+
+@parser
+def paren_expression(context: ParseContext) -> ParseResult[Expression]:
+    """Parse a parenthesised expression."""
+
+    parser = sequence(literal("("), whitespace, expression, whitespace, literal(")"))
+    r = parser(context)
+
+    return ParseResult(result=r.result[2], context=r.context)
+
+
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
     string_literal_expression,
+    paren_expression,
 )
 
 
