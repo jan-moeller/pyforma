@@ -107,6 +107,20 @@ def test_unresolved_identifiers(
         ("{{a|b}}", {"a": 0b10, "b": 0b01}, False, None, nullcontext(["3"])),
         ("{{a in b}}", {"a": 1, "b": []}, False, {bool: str}, nullcontext(["False"])),
         (
+            "{{1<a<=b==2}}",
+            {"a": 2, "b": 2},
+            False,
+            {bool: str},
+            nullcontext(["True"]),
+        ),
+        (
+            "{{1>a>=b!=2}}",
+            {"a": 2, "b": 2},
+            False,
+            {bool: str},
+            nullcontext(["False"]),
+        ),
+        (
             "{{a and b}}",
             {"a": True, "b": False},
             False,

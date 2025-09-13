@@ -96,6 +96,58 @@ def _binop_expression(
     return parse_binop_expression
 
 
+def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
+    """Implements chained comparison operator parsing"""
+
+    cmp_op = alternation(
+        literal("=="),
+        literal("!="),
+        literal("<="),
+        literal("<"),
+        literal(">="),
+        literal(">"),
+    )
+
+    p = sequence(
+        base_expr,
+        repetition(
+            sequence(
+                whitespace,
+                cmp_op,
+                whitespace,
+                base_expr,
+            )
+        ),
+    )
+
+    @parser
+    def parse_comparison_expression(context: ParseContext) -> ParseResult[Expression]:
+        """Parse a comparison expression."""
+
+        r = p(context)
+        expressions = [r.result[0], *[e[3] for e in r.result[1]]]
+        operators = [e[1] for e in r.result[1]]
+
+        if len(expressions) == 1:
+            return ParseResult(result=expressions[0], context=r.context)
+
+        conjunction: list[Expression] = []
+        for i in range(len(operators)):
+            op = operators[i]
+            lhs = expressions[i]
+            rhs = expressions[i + 1]
+            expr = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
+            conjunction.append(expr)
+
+        result_expr = conjunction[0]
+        for expr in conjunction[1:]:
+            result_expr = BinOpExpression(op="and", lhs=result_expr, rhs=expr)
+
+        return ParseResult(result=result_expr, context=r.context)
+
+    return parse_comparison_expression
+
+
 @parser
 def expression(context: ParseContext) -> ParseResult[Expression]:
     """Parse an expression."""
@@ -115,7 +167,10 @@ def expression(context: ParseContext) -> ParseResult[Expression]:
     in_expression: Parser[Expression] = _binop_expression(
         bw_or_expression, "in", "not in"
     )
-    inversion_expression: Parser[Expression] = _unop_expression(in_expression, "not")
+    comparison_expression: Parser[Expression] = _comparison_expression(in_expression)
+    inversion_expression: Parser[Expression] = _unop_expression(
+        comparison_expression, "not"
+    )
     conjunction_expression: Parser[Expression] = _binop_expression(
         inversion_expression, "and"
     )

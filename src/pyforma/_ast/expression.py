@@ -57,7 +57,7 @@ class UnOpExpression(Expression):
         return self.operand.identifiers()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> "Expression":
+    def substitute(self, variables: dict[str, Any]) -> Expression:
         operand = self.operand.substitute(variables)
         if isinstance(operand, ValueExpression):
             match self.op:
@@ -92,6 +92,12 @@ class BinOpExpression(Expression):
         "<<",
         ">>",
         "in",
+        "==",
+        "!=",
+        "<=",
+        "<",
+        ">=",
+        ">",
         "not in",
         "and",
         "or",
@@ -104,7 +110,7 @@ class BinOpExpression(Expression):
         return self.lhs.identifiers() | self.rhs.identifiers()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> "Expression":
+    def substitute(self, variables: dict[str, Any]) -> Expression:
         lhs = self.lhs.substitute(variables)
         rhs = self.rhs.substitute(variables)
         if isinstance(lhs, ValueExpression) and isinstance(rhs, ValueExpression):
@@ -135,6 +141,18 @@ class BinOpExpression(Expression):
                     return ValueExpression(lhs.value ^ rhs.value)
                 case "|":
                     return ValueExpression(lhs.value | rhs.value)
+                case "==":
+                    return ValueExpression(lhs.value == rhs.value)
+                case "!=":
+                    return ValueExpression(lhs.value != rhs.value)
+                case "<=":
+                    return ValueExpression(lhs.value <= rhs.value)
+                case "<":
+                    return ValueExpression(lhs.value < rhs.value)
+                case ">=":
+                    return ValueExpression(lhs.value >= rhs.value)
+                case ">":
+                    return ValueExpression(lhs.value > rhs.value)
                 case "in":
                     return ValueExpression(lhs.value in rhs.value)
                 case "not in":

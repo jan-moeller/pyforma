@@ -159,6 +159,33 @@ from pyforma._parser.expression import expression
             ),
             7,
         ),
+        (
+            "a<b<=c==d",
+            nullcontext(
+                BinOpExpression(
+                    op="and",
+                    lhs=BinOpExpression(
+                        op="and",
+                        lhs=BinOpExpression(
+                            op="<",
+                            lhs=IdentifierExpression(identifier="a"),
+                            rhs=IdentifierExpression(identifier="b"),
+                        ),
+                        rhs=BinOpExpression(
+                            op="<=",
+                            lhs=IdentifierExpression(identifier="b"),
+                            rhs=IdentifierExpression(identifier="c"),
+                        ),
+                    ),
+                    rhs=BinOpExpression(
+                        op="==",
+                        lhs=IdentifierExpression(identifier="c"),
+                        rhs=IdentifierExpression(identifier="d"),
+                    ),
+                )
+            ),
+            9,
+        ),
         ('"foo', pytest.raises(ParseError), 0),
     ],
 )
