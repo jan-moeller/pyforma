@@ -4,7 +4,6 @@ from typing import final, Any, cast
 
 from ._ast import Expression, Comment, ValueExpression
 from ._parser import (
-    ParseError,
     ParseContext,
     template,
     TemplateSyntaxConfig,
@@ -35,7 +34,7 @@ class Template:
             syntax: Syntax configuration if the default syntax is not applicable.
 
         Raises:
-            ParseError: If the contents cannot be parsed
+            ValueError: If the contents cannot be parsed
         """
         if isinstance(content, Path):
             content = content.read_text()
@@ -45,13 +44,13 @@ class Template:
 
         parse = template(syntax)
         result = parse(ParseContext(content))
-        if not result.context.at_eof():
-            raise ParseError(
-                f"Excess content at end of file: {result.context[:]}",
-                context=result.context,
-            )
 
-        self._content = result.result
+        if result.is_failure:
+            # TODO: improve error reporting
+            line, column = result.context.line_and_column()
+            raise ValueError(f"Invalid template syntax at: {line}:{column}")
+
+        self._content = result.success.result
 
     def unresolved_identifiers(self) -> set[str]:
         """Provides access to the set of unresolved identifiers in this template"""

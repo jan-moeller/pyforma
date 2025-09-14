@@ -6,7 +6,7 @@ from pyforma._parser import ParseResult, ParseContext, parser, Parser
 
 @parser
 def empty(source: ParseContext) -> ParseResult[str]:
-    return ParseResult(context=source, result="")
+    return ParseResult.make_success(context=source, result="")
 
 
 @parser(name="empty")
@@ -34,7 +34,7 @@ empty_parser2 = parser(EmptyParser(), name="empty")
 )
 def test_parser(parser: Parser[str], expected_name: str):
     assert parser.name == expected_name
-    assert parser(ParseContext("foo")).result == ""
+    assert parser(ParseContext("foo")).success.result == ""
 
 
 def test_unsupported_parser():
@@ -46,7 +46,7 @@ def test_unsupported_parser():
             return super().__getattribute__(name)
 
         def __call__(self, context: ParseContext) -> ParseResult[str]:
-            return ParseResult(context=context, result="")
+            return ParseResult.make_success(context=context, result="")
 
     with pytest.raises(TypeError):
         _ = parser(WeirdParser())

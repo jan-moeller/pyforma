@@ -1,6 +1,6 @@
 import pytest
 
-from pyforma._parser import ParseContext, ParseResult, text
+from pyforma._parser import ParseContext, text
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,8 @@ def test_text(
     source: str,
     expected: str,
 ):
-    assert text("{#", "{{")(ParseContext(source)) == ParseResult(
-        context=ParseContext(source, index=len(expected)),
-        result=expected,
-    )
+    context = ParseContext(source)
+    result = text("{#", "{{")(context)
+    assert result.is_success
+    assert result.success.result == expected
+    assert result.context == ParseContext(source, index=len(expected))

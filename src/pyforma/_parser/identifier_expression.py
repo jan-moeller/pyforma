@@ -11,10 +11,25 @@ def identifier_expression(context: ParseContext) -> ParseResult[Expression]:
     """Parse an identifier expression."""
 
     r = identifier(context)
-    match r.result:
+    if r.is_failure:
+        return ParseResult.make_failure(
+            expected=identifier.name,
+            context=context,
+            cause=r,
+        )
+    match r.success.result:
         case "True":
-            return ParseResult(result=ValueExpression(True), context=r.context)
+            return ParseResult.make_success(
+                result=ValueExpression(True),
+                context=r.context,
+            )
         case "False":
-            return ParseResult(result=ValueExpression(False), context=r.context)
+            return ParseResult.make_success(
+                result=ValueExpression(False),
+                context=r.context,
+            )
         case _:
-            return ParseResult(result=IdentifierExpression(r.result), context=r.context)
+            return ParseResult.make_success(
+                result=IdentifierExpression(r.success.result),
+                context=r.context,
+            )

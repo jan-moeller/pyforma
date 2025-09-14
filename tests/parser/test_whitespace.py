@@ -1,6 +1,6 @@
 import pytest
 
-from pyforma._parser import ParseResult, ParseContext, whitespace
+from pyforma._parser import ParseContext, whitespace
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,8 @@ def test_whitespace(
     source: str,
     expected: str,
 ):
-    assert whitespace(ParseContext(source)) == ParseResult(
-        context=ParseContext(source, index=len(expected)),
-        result=expected,
-    )
+    context = ParseContext(source)
+    result = whitespace(context)
+    assert result.is_success
+    assert result.success.result == expected
+    assert result.context == ParseContext(source, index=len(expected))

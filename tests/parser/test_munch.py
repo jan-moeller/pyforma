@@ -1,11 +1,15 @@
 from collections.abc import Callable
-from contextlib import nullcontext
 from itertools import pairwise
-from typing import Any, ContextManager, final, override
+from typing import Any, final, override
 
 import pytest
 
-from pyforma._parser import munch, ParseError, ParseResult, ParseContext
+from pyforma._parser import (
+    munch,
+    ParseContext,
+    ParseFailure,
+    ParseSuccess,
+)
 
 
 @final
@@ -31,24 +35,26 @@ class Weird:
 @pytest.mark.parametrize(
     "source,predicate,expected",
     [  # type: ignore
-        ("", str.isidentifier, nullcontext("")),
-        ("foo", str.isdigit, nullcontext("")),
-        ("foo", str.isidentifier, nullcontext("foo")),
-        ("123foo", str.isdigit, nullcontext("123")),
-        ("12356", ConsecutiveDigits(4), nullcontext("123")),
-        ("12356", ConsecutiveDigits(2), nullcontext("12")),
-        ("123foo", ConsecutiveDigits(0), nullcontext("")),
-        ("foo", Weird(), nullcontext("")),
-        ("123foo", lambda: None, pytest.raises(ParseError)),
+        ("", str.isidentifier, ParseSuccess("")),
+        ("foo", str.isdigit, ParseSuccess("")),
+        ("foo", str.isidentifier, ParseSuccess("foo")),
+        ("123foo", str.isdigit, ParseSuccess("123")),
+        ("12356", ConsecutiveDigits(4), ParseSuccess("123")),
+        ("12356", ConsecutiveDigits(2), ParseSuccess("12")),
+        ("123foo", ConsecutiveDigits(0), ParseSuccess("")),
+        ("foo", Weird(), ParseSuccess("")),
     ],
 )
 def test_munch(
     source: str,
     predicate: Callable[[str], bool],
-    expected: ContextManager[str],
+    expected: ParseSuccess | ParseFailure,
 ):
-    with expected as e:
-        assert munch(predicate)(ParseContext(source)) == ParseResult(
-            context=ParseContext(source, index=len(e)),
-            result=e,
-        )
+    context = ParseContext(source)
+    result = munch(predicate)(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=len(expected.result))
+    else:
+        assert result.context == context

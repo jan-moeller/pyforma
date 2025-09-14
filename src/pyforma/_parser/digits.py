@@ -15,14 +15,14 @@ def _isbindigit(s: str) -> bool:
     return all(c in ["0", "1"] for c in s)
 
 
-digits = munch(str.isdigit)
+digits = munch(str.isdigit, name="digits")
 """Parses zero or more digit characters."""
 
-hexdigits = munch(_ishexdigit)
+hexdigits = munch(_ishexdigit, name="hexdigits")
 """Parses zero or more hexadecimal digit characters."""
 
-octdigits = munch(_isoctdigit)
+octdigits = munch(_isoctdigit, name="octdigits")
 """Parses zero or more octal digit characters."""
 
-bindigits = munch(_isbindigit)
+bindigits = munch(_isbindigit, name="bindigits")
 """Parses zero or more binary digit characters."""

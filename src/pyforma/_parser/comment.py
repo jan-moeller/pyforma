@@ -3,29 +3,37 @@ from functools import cache
 from .template_syntax_config import BlockSyntaxConfig
 from .parser import parser, Parser
 from .parse_context import ParseContext
-from .parse_error import ParseError
 from .parse_result import ParseResult
 from pyforma._ast import Comment
+from pyforma._util import defaulted
 
 
 @cache
-def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
+def comment(
+    syntax: BlockSyntaxConfig,
+    /,
+    *,
+    name: str | None = None,
+) -> Parser[Comment]:
     """Creates a comment parser using the provided open and close markers
 
     Args:
         syntax: Syntax config to use
+        name: Optional parser name
 
     Returns:
         The comment parser.
     """
 
-    @parser(name="comment")
+    name = defaulted(name, f'comment("{syntax.open}", "{syntax.close}")')
+
+    @parser(name=name)
     def parse_comment(context: ParseContext) -> ParseResult[Comment]:
         cur_context = context
 
         if not cur_context[:].startswith(syntax.open):
-            raise ParseError(
-                f"expected {syntax.open} to start a comment",
+            return ParseResult.make_failure(
+                expected=f'"{syntax.open}"',
                 context=context,
             )
 
@@ -35,10 +43,10 @@ def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
         while not cur_context.at_eof():
             if cur_context[:].startswith(syntax.open):
                 r = parse_comment(cur_context)
-                result += f"{syntax.open}{r.result.text}{syntax.close}"
+                result += f"{syntax.open}{r.success.result.text}{syntax.close}"
                 cur_context = r.context
             elif cur_context[:].startswith(syntax.close):
-                return ParseResult(
+                return ParseResult.make_success(
                     context=cur_context.consume(len(syntax.close)),
                     result=Comment(result),
                 )
@@ -46,6 +54,12 @@ def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
                 result += cur_context.peek()
                 cur_context = cur_context.consume()
 
-        raise ParseError("Unclosed comment", context=context)
+        return ParseResult.make_failure(
+            context=context,
+            expected=name,
+            cause=ParseResult.make_failure(
+                expected=f'"{syntax.close}"', context=cur_context
+            ),
+        )
 
     return parse_comment

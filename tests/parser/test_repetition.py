@@ -1,24 +1,35 @@
 import pytest
 
-from pyforma._parser import ParseContext, literal, ParseResult, repetition
+from pyforma._parser import (
+    ParseContext,
+    literal,
+    repetition,
+    ParseFailure,
+    ParseSuccess,
+)
 
 
 @pytest.mark.parametrize(
     "source,lit,expected",
     [
-        ("", "", ()),
-        ("aaa", "a", ("a", "a", "a")),
-        ("aaa", "aa", ("aa",)),
-        ("foofoobar", "foo", ("foo", "foo")),
-        ("foo", "bar", ()),
+        ("", "", ParseSuccess(())),
+        ("aaa", "a", ParseSuccess(("a", "a", "a"))),
+        ("aaa", "aa", ParseSuccess(("aa",))),
+        ("foofoobar", "foo", ParseSuccess(("foo", "foo"))),
+        ("foo", "bar", ParseSuccess(())),
     ],
 )
 def test_repetition(
     source: str,
     lit: str,
-    expected: list[str],
+    expected: ParseSuccess[tuple[str, ...]] | ParseFailure,
 ):
-    assert repetition(literal(lit))(ParseContext(source)) == ParseResult(
-        context=ParseContext(source, index=len("".join(expected))),
-        result=expected,
-    )
+    context = ParseContext(source)
+    result = repetition(literal(lit))(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        expect_len = len("".join(expected.result))
+        assert result.context == ParseContext(source, index=expect_len)
+    else:
+        assert result.context == context

@@ -1,28 +1,28 @@
-from contextlib import nullcontext
-from typing import ContextManager
-
 import pytest
 
-from pyforma._parser import ParseContext, literal, ParseResult, ParseError
+from pyforma._parser import ParseContext, literal, ParseSuccess, ParseFailure
 
 
 @pytest.mark.parametrize(
     "source,lit,expected",
     [
-        ("", "", nullcontext("")),
-        ("", "foo", pytest.raises(ParseError)),
-        ("foo", "foo", nullcontext("foo")),
-        ("foobar", "foo", nullcontext("foo")),
-        ("fobar", "foo", pytest.raises(ParseError)),
+        ("", "", ParseSuccess("")),
+        ("", "foo", ParseFailure('"foo"')),
+        ("foo", "foo", ParseSuccess("foo")),
+        ("foobar", "foo", ParseSuccess("foo")),
+        ("fobar", "foo", ParseFailure('"foo"')),
     ],
 )
 def test_literal(
     source: str,
     lit: str,
-    expected: ContextManager[str],
+    expected: ParseSuccess[str] | ParseFailure,
 ):
-    with expected as e:
-        assert literal(lit)(ParseContext(source)) == ParseResult(
-            context=ParseContext(source, index=len(e)),
-            result=e,
-        )
+    context = ParseContext(source)
+    result = literal(lit)(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=len(expected.result))
+    else:
+        assert result.context == context

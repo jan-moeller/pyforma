@@ -1,34 +1,57 @@
-from contextlib import nullcontext
-from typing import ContextManager
-
 import pytest
 
-from pyforma._ast.expression import IdentifierExpression, ValueExpression
+from pyforma._ast.expression import Expression, IdentifierExpression, ValueExpression
 from pyforma._parser import (
     ParseContext,
-    ParseError,
     expression_block,
     BlockSyntaxConfig,
+    ParseFailure,
+    ParseSuccess,
+    ParseResult,
 )
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
-        ("", pytest.raises(ParseError), 0),
-        ("{{foo}}", nullcontext(IdentifierExpression("foo")), 7),
-        ("{{ foo }}", nullcontext(IdentifierExpression("foo")), 9),
-        ("{{ foo }}bar", nullcontext(IdentifierExpression("foo")), 9),
-        ("{{'foo'}}bar", nullcontext(ValueExpression("foo")), 9),
-        ("{{ foo", pytest.raises(ParseError), 0),
+        (
+            "",
+            ParseFailure(
+                expected="expression-block",
+                cause=ParseResult(
+                    ParseFailure(expected='"{{"'),
+                    context=ParseContext(source="", index=0),
+                ),
+            ),
+            0,
+        ),
+        ("{{foo}}", ParseSuccess(IdentifierExpression("foo")), 7),
+        ("{{ foo }}", ParseSuccess(IdentifierExpression("foo")), 9),
+        ("{{ foo }}bar", ParseSuccess(IdentifierExpression("foo")), 9),
+        ("{{'foo'}}bar", ParseSuccess(ValueExpression("foo")), 9),
+        (
+            "{{ foo",
+            ParseFailure(
+                expected="expression-block",
+                cause=ParseResult(
+                    ParseFailure(expected='"}}"'),
+                    context=ParseContext(source="{{ foo", index=6),
+                ),
+            ),
+            0,
+        ),
     ],
 )
 def test_expression_block(
     source: str,
-    expected: ContextManager[str],
+    expected: ParseSuccess[Expression] | ParseFailure,
     result_idx: int,
 ):
-    with expected as e:
-        r = expression_block(BlockSyntaxConfig("{{", "}}"))(ParseContext(source))
-        assert r.result == e
-        assert r.context == ParseContext(source, result_idx)
+    context = ParseContext(source)
+    result = expression_block(BlockSyntaxConfig("{{", "}}"))(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=result_idx)
+    else:
+        assert result.context == context

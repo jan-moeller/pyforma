@@ -24,4 +24,4 @@ from pyforma._parser import (
 def test_template(source: str, expected: list[str | Comment], remaining: str):
     result = template(TemplateSyntaxConfig())(ParseContext(source))
     assert result.context[:] == remaining
-    assert result.result == expected
+    assert result.success.result == expected

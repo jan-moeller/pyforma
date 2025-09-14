@@ -14,7 +14,6 @@ from pyforma._ast.expression import (
     IndexExpression,
     CallExpression,
 )
-from pyforma._parser.parse_error import ParseError
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
 
@@ -274,5 +273,5 @@ def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_init_from_invalid():
-    with pytest.raises(ParseError):
+    with pytest.raises(ValueError):
         _ = Template("foo{{barbau{{")

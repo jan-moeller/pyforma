@@ -1,26 +1,41 @@
-from contextlib import nullcontext
-from typing import Any, ContextManager
+from typing import Any
 
 import pytest
 
-from pyforma._parser import alternation, Parser, literal, ParseContext, ParseError
+from pyforma._parser import (
+    alternation,
+    Parser,
+    literal,
+    ParseContext,
+    ParseSuccess,
+    ParseFailure,
+)
 
 
 @pytest.mark.parametrize(
     "source,parsers,expected",
     [
-        ("", (), pytest.raises(ParseError)),
-        ("foobar", (), pytest.raises(ParseError)),
-        ("foobar", (literal("foo"),), nullcontext("foo")),
-        ("foobar", (literal("bar"), literal("foo")), nullcontext("foo")),
-        ("fob", (literal("foo"), literal("bar")), pytest.raises(ParseError)),
+        ("", (), ParseFailure(expected="alternation()")),
+        ("foobar", (), ParseFailure(expected="alternation()")),
+        ("foobar", (literal("foo"),), ParseSuccess("foo")),
+        ("foobar", (literal("bar"), literal("foo")), ParseSuccess("foo")),
+        (
+            "fob",
+            (literal("foo"), literal("bar")),
+            ParseFailure(expected='alternation("foo", "bar")'),
+        ),
     ],
 )
 def test_alternation(
     source: str,
     parsers: tuple[Parser[Any], ...],
-    expected: ContextManager[str],
+    expected: ParseSuccess | ParseFailure,
 ):
-    with expected as e:
-        result = alternation(*parsers)(ParseContext(source))
-        assert result.result == e
+    context = ParseContext(source)
+    result = alternation(*parsers)(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=len(expected.result))
+    else:
+        assert result.context == context

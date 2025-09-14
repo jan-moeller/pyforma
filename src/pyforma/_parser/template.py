@@ -1,5 +1,8 @@
 from functools import cache
 
+from .sequence import sequence
+from .transform_result import transform_success
+from .eof import eof
 from .expression_block import expression_block
 from .non_empty import non_empty
 from .alternation import alternation
@@ -25,10 +28,17 @@ def template(
         The template parser
     """
 
-    return repetition(
-        alternation(
-            non_empty(text(syntax.comment.open, syntax.expression.open)),
-            comment(syntax.comment),
-            expression_block(syntax.expression),
-        )
+    return transform_success(
+        sequence(
+            repetition(
+                alternation(
+                    non_empty(text(syntax.comment.open, syntax.expression.open)),
+                    comment(syntax.comment),
+                    expression_block(syntax.expression),
+                )
+            ),
+            eof,
+            name="template",
+        ),
+        transform=lambda s: s[0],
     )

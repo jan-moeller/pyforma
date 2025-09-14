@@ -1,4 +1,5 @@
 import ast
+from pyforma._parser.transform_result import transform_consumed
 
 from .alternation import alternation
 from .option import option
@@ -7,41 +8,27 @@ from .digits import digits
 from .repetition import repetition
 from .sequence import sequence
 from .literal import literal
-from .parser import parser
-from .parse_context import ParseContext
-from .parse_result import ParseResult
 from pyforma._ast import ValueExpression
 
+_dec = sequence(
+    non_empty(digits), repetition(sequence(literal("_"), non_empty(digits)))
+)
 
-@parser
-def floating_point_literal_expression(
-    context: ParseContext,
-) -> ParseResult[ValueExpression]:
-    """Parse a float literal expression."""
-
-    dec = sequence(
-        non_empty(digits), repetition(sequence(literal("_"), non_empty(digits)))
-    )
-
-    floating_point = sequence(
-        dec,
+floating_point_literal_expression = transform_consumed(
+    sequence(
+        _dec,
         alternation(
             sequence(
                 literal("."),
-                option(dec),
+                option(_dec),
             ),
             sequence(
                 alternation(literal("e"), literal("E")),
                 option(alternation(literal("-"), literal("+"))),
-                dec,
+                _dec,
             ),
         ),
-    )
-
-    r = floating_point(context)
-    float_text = context[: (r.context.index - context.index)]
-
-    return ParseResult(
-        result=ValueExpression(ast.literal_eval(float_text)),
-        context=r.context,
-    )
+        name="float literal",
+    ),
+    transform=lambda s: ValueExpression(ast.literal_eval(s)),
+)

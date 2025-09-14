@@ -1,33 +1,33 @@
-from contextlib import nullcontext
-from typing import ContextManager
-
 import pytest
 
 from pyforma._parser import (
-    ParseError,
-    ParseResult,
     ParseContext,
     Parser,
     whitespace,
     non_empty,
+    ParseFailure,
+    ParseSuccess,
 )
 
 
 @pytest.mark.parametrize(
     "source,parser,expected",
     [
-        ("", whitespace, pytest.raises(ParseError)),
-        ("   ", whitespace, nullcontext("   ")),
-        ("foo  bar", whitespace, pytest.raises(ParseError)),
+        ("", whitespace, ParseFailure(expected="non-empty(whitespace)")),
+        ("   ", whitespace, ParseSuccess("   ")),
+        ("foo  bar", whitespace, ParseFailure(expected="non-empty(whitespace)")),
     ],
 )
 def test_non_empty(
     source: str,
     parser: Parser[str],
-    expected: ContextManager[str],
+    expected: ParseSuccess | ParseFailure,
 ):
-    with expected as e:
-        assert non_empty(parser)(ParseContext(source)) == ParseResult(
-            context=ParseContext(source, index=len(e)),
-            result=e,
-        )
+    context = ParseContext(source)
+    result = non_empty(parser)(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=len(expected.result))
+    else:
+        assert result.context == context

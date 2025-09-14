@@ -1,31 +1,56 @@
-from contextlib import nullcontext
-from typing import ContextManager
-
 import pytest
 
 from pyforma._ast import Comment
-from pyforma._parser import ParseContext, ParseError, comment
+from pyforma._parser import (
+    ParseContext,
+    comment,
+    ParseFailure,
+    ParseSuccess,
+    ParseResult,
+)
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
-        ("", pytest.raises(ParseError), 0),
-        ("{#foo#}", nullcontext(Comment("foo")), 7),
-        ("{#foo#}bar", nullcontext(Comment("foo")), 7),
-        ("{# foo bar #} baz", nullcontext(Comment(" foo bar ")), 13),
-        ("{# foo {# bar #} #} baz", nullcontext(Comment(" foo {# bar #} ")), 19),
-        ("{# foo", pytest.raises(ParseError), 0),
-        ("{# {# #}", pytest.raises(ParseError), 0),
+        ("", ParseFailure(expected='"{#"'), 0),
+        ("{#foo#}", ParseSuccess(Comment("foo")), 7),
+        ("{#foo#}bar", ParseSuccess(Comment("foo")), 7),
+        ("{# foo bar #} baz", ParseSuccess(Comment(" foo bar ")), 13),
+        ("{# foo {# bar #} #} baz", ParseSuccess(Comment(" foo {# bar #} ")), 19),
+        (
+            "{# foo",
+            ParseFailure(
+                expected='comment("{#", "#}")',
+                cause=ParseResult.make_failure(
+                    context=ParseContext("{# foo", index=6), expected='"#}"'
+                ),
+            ),
+            0,
+        ),
+        (
+            "{# {# #}",
+            ParseFailure(
+                expected='comment("{#", "#}")',
+                cause=ParseResult.make_failure(
+                    context=ParseContext("{# {# #}", index=8), expected='"#}"'
+                ),
+            ),
+            0,
+        ),
     ],
 )
 def test_comment(
     source: str,
-    expected: ContextManager[str],
+    expected: ParseSuccess | ParseFailure,
     result_idx: int,
 ):
-    with expected as e:
-        r = comment(BlockSyntaxConfig("{#", "#}"))(ParseContext(source))
-        assert r.result == e
-        assert r.context == ParseContext(source, result_idx)
+    context = ParseContext(source)
+    result = comment(BlockSyntaxConfig("{#", "#}"))(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=result_idx)
+    else:
+        assert result.context == context

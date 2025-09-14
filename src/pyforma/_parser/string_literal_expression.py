@@ -1,38 +1,21 @@
 import ast
 
+from .alternation import alternation
+from .enclosed import enclosed
+from .transform_result import transform_consumed
 from .literal import literal
-from .not_in import not_in
-from .parse_error import ParseError
-from .parser import parser
-from .parse_context import ParseContext
-from .parse_result import ParseResult
+from .until import until
 from pyforma._ast import ValueExpression
 
 
-@parser
-def string_literal_expression(context: ParseContext) -> ParseResult[ValueExpression]:
-    """Parse a string literal expression."""
+_string = alternation(
+    enclosed(delim=literal('"'), content=until(literal('"'))),
+    enclosed(delim=literal("'"), content=until(literal("'"))),
+    name="string literal",
+)
 
-    if context.at_eof():
-        raise ParseError("expected string literal but found EOF", context=context)
 
-    delim = context.peek()
-    if delim not in ['"', "'"]:
-        raise ParseError(
-            f"expected string literal but found '{delim}'",
-            context=context,
-        )
-
-    cur_context = context.consume()
-    text_result = not_in(literal(delim))(cur_context)
-    cur_context = text_result.context
-
-    if cur_context.at_eof():
-        raise ParseError("unterminated string", context=context)
-
-    cur_context = cur_context.consume()
-
-    return ParseResult(
-        result=ValueExpression(ast.literal_eval(f"{delim}{text_result.result}{delim}")),
-        context=cur_context,
-    )
+string_literal_expression = transform_consumed(
+    _string,
+    transform=lambda s: ValueExpression(ast.literal_eval(s)),
+)

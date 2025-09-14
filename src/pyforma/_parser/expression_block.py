@@ -1,11 +1,11 @@
 from functools import cache
 
+from pyforma._parser.transform_result import transform_success
+
 from .whitespace import whitespace
-from .parse_context import ParseContext
-from .parse_result import ParseResult
 from .literal import literal
 from .sequence import sequence
-from .parser import Parser, parser
+from .parser import Parser
 from .expression import expression
 from .template_syntax_config import BlockSyntaxConfig
 from pyforma._ast.expression import Expression
@@ -22,13 +22,14 @@ def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
         The expression block parser.
     """
 
-    base_parser = sequence(
-        literal(syntax.open), whitespace, expression, whitespace, literal(syntax.close)
+    return transform_success(
+        sequence(
+            literal(syntax.open),
+            whitespace,
+            expression,
+            whitespace,
+            literal(syntax.close),
+            name="expression-block",
+        ),
+        transform=lambda result: result[2],
     )
-
-    @parser
-    def parse_expression_block(context: ParseContext) -> ParseResult[Expression]:
-        r = base_parser(context)
-        return ParseResult(context=r.context, result=r.result[2])
-
-    return parse_expression_block

@@ -1,6 +1,3 @@
-from contextlib import nullcontext
-from typing import ContextManager
-
 import pytest
 
 from pyforma._ast import IdentifierExpression, ValueExpression
@@ -10,39 +7,135 @@ from pyforma._ast.expression import (
     IndexExpression,
     UnOpExpression,
 )
-from pyforma._parser import ParseContext, ParseError
+from pyforma._parser import ParseContext
 from pyforma._parser.expression import expression
+from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
-        ("", pytest.raises(ParseError), 0),
-        (" ", pytest.raises(ParseError), 0),
-        ("foo bar", nullcontext(IdentifierExpression("foo")), 3),
-        ("'foo ' bar", nullcontext(ValueExpression("foo ")), 6),
-        ('"foo " bar', nullcontext(ValueExpression("foo ")), 6),
-        (r'"foo\nbar"', nullcontext(ValueExpression("foo\nbar")), 10),
-        ("42", nullcontext(ValueExpression(42)), 2),
-        ("1_000", nullcontext(ValueExpression(1000)), 5),
-        ("0xdeadbeef", nullcontext(ValueExpression(0xDEADBEEF)), 10),
-        ("0o1234", nullcontext(ValueExpression(0o1234)), 6),
-        ("0b0010", nullcontext(ValueExpression(0b0010)), 6),
-        ("1.", nullcontext(ValueExpression(1.0)), 2),
-        ("1.234", nullcontext(ValueExpression(1.234)), 5),
-        ("1_000.234_567", nullcontext(ValueExpression(1000.234567)), 13),
-        ("1e3", nullcontext(ValueExpression(1e3)), 3),
-        ("1e-3", nullcontext(ValueExpression(1e-3)), 4),
-        ("True", nullcontext(ValueExpression(True)), 4),
-        ("False", nullcontext(ValueExpression(False)), 5),
+        ("", ParseFailure(expected="expression"), 0),
+        (
+            " ",
+            ParseFailure(
+                expected="expression",
+                cause=ParseResult(
+                    ParseFailure(
+                        expected="binary-expression",
+                        cause=ParseResult(
+                            ParseFailure(
+                                expected='sequence(binary-expression, repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression)))',
+                                cause=ParseResult(
+                                    ParseFailure(
+                                        expected="binary-expression",
+                                        cause=ParseResult(
+                                            ParseFailure(
+                                                expected='sequence(unary-expression, repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression)))',
+                                                cause=ParseResult(
+                                                    ParseFailure(
+                                                        expected="unary-expression",
+                                                        cause=ParseResult(
+                                                            ParseFailure(
+                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression), comparison-expression)',
+                                                            ),
+                                                            context=ParseContext(
+                                                                source=" ", index=0
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    context=ParseContext(
+                                                        source=" ", index=0
+                                                    ),
+                                                ),
+                                            ),
+                                            context=ParseContext(source=" ", index=0),
+                                        ),
+                                    ),
+                                    context=ParseContext(source=" ", index=0),
+                                ),
+                            ),
+                            context=ParseContext(source=" ", index=0),
+                        ),
+                    ),
+                    context=ParseContext(source=" ", index=0),
+                ),
+            ),
+            0,
+        ),
+        (
+            '"foo',
+            ParseFailure(
+                expected="expression",
+                cause=ParseResult(
+                    ParseFailure(
+                        expected="binary-expression",
+                        cause=ParseResult(
+                            ParseFailure(
+                                expected='sequence(binary-expression, repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression)))',
+                                cause=ParseResult(
+                                    ParseFailure(
+                                        expected="binary-expression",
+                                        cause=ParseResult(
+                                            ParseFailure(
+                                                expected='sequence(unary-expression, repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression)))',
+                                                cause=ParseResult(
+                                                    ParseFailure(
+                                                        expected="unary-expression",
+                                                        cause=ParseResult(
+                                                            ParseFailure(
+                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression), comparison-expression)',
+                                                            ),
+                                                            context=ParseContext(
+                                                                source='"foo', index=0
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    context=ParseContext(
+                                                        source='"foo', index=0
+                                                    ),
+                                                ),
+                                            ),
+                                            context=ParseContext(
+                                                source='"foo', index=0
+                                            ),
+                                        ),
+                                    ),
+                                    context=ParseContext(source='"foo', index=0),
+                                ),
+                            ),
+                            context=ParseContext(source='"foo', index=0),
+                        ),
+                    ),
+                    context=ParseContext(source='"foo', index=0),
+                ),
+            ),
+            0,
+        ),
+        ("foo bar", ParseSuccess(IdentifierExpression("foo")), 3),
+        ("'foo ' bar", ParseSuccess(ValueExpression("foo ")), 6),
+        ('"foo " bar', ParseSuccess(ValueExpression("foo ")), 6),
+        (r'"foo\nbar"', ParseSuccess(ValueExpression("foo\nbar")), 10),
+        ("42", ParseSuccess(ValueExpression(42)), 2),
+        ("1_000", ParseSuccess(ValueExpression(1000)), 5),
+        ("0xdeadbeef", ParseSuccess(ValueExpression(0xDEADBEEF)), 10),
+        ("0o1234", ParseSuccess(ValueExpression(0o1234)), 6),
+        ("0b0010", ParseSuccess(ValueExpression(0b0010)), 6),
+        ("1.", ParseSuccess(ValueExpression(1.0)), 2),
+        ("1.234", ParseSuccess(ValueExpression(1.234)), 5),
+        ("1_000.234_567", ParseSuccess(ValueExpression(1000.234567)), 13),
+        ("1e3", ParseSuccess(ValueExpression(1e3)), 3),
+        ("1e-3", ParseSuccess(ValueExpression(1e-3)), 4),
+        ("True", ParseSuccess(ValueExpression(True)), 4),
+        ("False", ParseSuccess(ValueExpression(False)), 5),
         (
             "-a",
-            nullcontext(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
+            ParseSuccess(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
             2,
         ),
         (
             "--a",
-            nullcontext(
+            ParseSuccess(
                 UnOpExpression(
                     op="-",
                     operand=UnOpExpression(op="-", operand=IdentifierExpression("a")),
@@ -52,7 +145,7 @@ from pyforma._parser.expression import expression
         ),
         (
             'a+"b"',
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="+",
                     lhs=IdentifierExpression("a"),
@@ -63,7 +156,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a * b + c / d",
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="+",
                     lhs=BinOpExpression(
@@ -82,7 +175,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a + b * c - d",
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="-",
                     lhs=BinOpExpression(
@@ -101,7 +194,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a and b or c in d ** e ^ f & g << h + -i * j | k",
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="or",
                     lhs=BinOpExpression(
@@ -151,7 +244,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "(a+b)*c",
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="*",
                     lhs=BinOpExpression(
@@ -166,7 +259,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a<b<=c==d",
-            nullcontext(
+            ParseSuccess(
                 BinOpExpression(
                     op="and",
                     lhs=BinOpExpression(
@@ -193,7 +286,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a[0]",
-            nullcontext(
+            ParseSuccess(
                 IndexExpression(
                     expression=IdentifierExpression("a"), index=ValueExpression(0)
                 )
@@ -202,7 +295,7 @@ from pyforma._parser.expression import expression
         ),
         (
             "a[:][b]",
-            nullcontext(
+            ParseSuccess(
                 IndexExpression(
                     expression=IndexExpression(
                         expression=IdentifierExpression("a"),
@@ -220,15 +313,18 @@ from pyforma._parser.expression import expression
             ),
             7,
         ),
-        ('"foo', pytest.raises(ParseError), 0),
     ],
 )
 def test_expression(
     source: str,
-    expected: ContextManager[str],
+    expected: ParseSuccess | ParseFailure,
     result_idx: int,
 ):
-    with expected as e:
-        r = expression(ParseContext(source))
-        assert r.result == e
-        assert r.context == ParseContext(source, result_idx)
+    context = ParseContext(source)
+    result = expression(context)
+    assert type(result.value) is type(expected)
+    assert result.value == expected
+    if isinstance(expected, ParseSuccess):
+        assert result.context == ParseContext(source, index=result_idx)
+    else:
+        assert result.context == context

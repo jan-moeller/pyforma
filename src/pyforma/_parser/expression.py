@@ -8,6 +8,7 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
+from pyforma._parser.transform_result import transform_success
 from .option import option
 from .repetition import repetition
 from .whitespace import whitespace
@@ -23,14 +24,60 @@ from .integer_literal_expression import integer_literal_expression
 from .floating_point_literal_expression import floating_point_literal_expression
 
 
-@parser
-def paren_expression(context: ParseContext) -> ParseResult[Expression]:
-    """Parse a parenthesised expression."""
+@parser(name="expression")
+def expression(context: ParseContext) -> ParseResult[Expression]:
+    """Parse an expression."""
 
-    parser = sequence(literal("("), whitespace, expression, whitespace, literal(")"))
-    r = parser(context)
+    if context.at_eof():
+        return ParseResult.make_failure(context=context, expected=expression.name)
 
-    return ParseResult(result=r.result[2], context=r.context)
+    power_expression: Parser[Expression] = _binop_expression(primary_expression, "**")
+    factor_expression: Parser[Expression] = _unop_expression(
+        power_expression, "+", "-", "~"
+    )
+    term_expression: Parser[Expression] = _binop_expression(
+        factor_expression, "*", "//", "/", "%", "@"
+    )
+    sum_expression: Parser[Expression] = _binop_expression(term_expression, "+", "-")
+    shift_expression: Parser[Expression] = _binop_expression(sum_expression, "<<", ">>")
+    bw_and_expression: Parser[Expression] = _binop_expression(shift_expression, "&")
+    bw_xor_expression: Parser[Expression] = _binop_expression(bw_and_expression, "^")
+    bw_or_expression: Parser[Expression] = _binop_expression(bw_xor_expression, "|")
+    in_expression: Parser[Expression] = _binop_expression(
+        bw_or_expression, "in", "not in"
+    )
+    comparison_expression: Parser[Expression] = _comparison_expression(in_expression)
+    inversion_expression: Parser[Expression] = _unop_expression(
+        comparison_expression, "not"
+    )
+    conjunction_expression: Parser[Expression] = _binop_expression(
+        inversion_expression, "and"
+    )
+    disjunction_expression: Parser[Expression] = _binop_expression(
+        conjunction_expression, "or"
+    )
+
+    r = disjunction_expression(context)
+    if r.is_failure:
+        return ParseResult.make_failure(
+            expected=expression.name,
+            context=context,
+            cause=r,
+        )
+    return r
+
+
+paren_expression = transform_success(
+    sequence(
+        literal("("),
+        whitespace,
+        expression,
+        whitespace,
+        literal(")"),
+        name="paren-expression",
+    ),
+    transform=lambda s: s[2],
+)
 
 
 simple_expression: Parser[Expression] = alternation(
@@ -39,6 +86,7 @@ simple_expression: Parser[Expression] = alternation(
     floating_point_literal_expression,
     integer_literal_expression,
     paren_expression,
+    name="simple-expression",
 )
 
 
@@ -59,14 +107,25 @@ def primary_expression(context: ParseContext) -> ParseResult[Expression]:
         whitespace,
         literal("]"),
     )
-    p = sequence(simple_expression, repetition(sequence(whitespace, indexing)))
+    p = sequence(
+        simple_expression,
+        repetition(sequence(whitespace, indexing)),
+        name="primary-expression",
+    )
     r = p(context)
 
-    if len(r.result[1]) == 0:
-        return ParseResult(result=r.result[0], context=r.context)
+    if r.is_failure:
+        return ParseResult.make_failure(
+            expected=primary_expression.name,
+            context=context,
+            cause=r,
+        )
 
-    expr = r.result[0]
-    for e in r.result[1]:
+    if len(r.success.result[1]) == 0:
+        return ParseResult.make_success(result=r.success.result[0], context=r.context)
+
+    expr = r.success.result[0]
+    for e in r.success.result[1]:
         index = e[1][2]
         if isinstance(index, Expression):
             expr = IndexExpression(expr, index)
@@ -78,7 +137,7 @@ def primary_expression(context: ParseContext) -> ParseResult[Expression]:
             )
             expr = IndexExpression(expr, s)
 
-    return ParseResult(result=expr, context=r.context)
+    return ParseResult.make_success(result=expr, context=r.context)
 
 
 @cache
@@ -89,7 +148,7 @@ def _unop_expression(
     """Implements generic unary operator parsing"""
     op_parsers = tuple(literal(op) for op in operators)
 
-    @parser
+    @parser(name="unary-expression")
     def parse_unary_expression(context: ParseContext) -> ParseResult[Expression]:
         parser = alternation(
             sequence(
@@ -100,12 +159,21 @@ def _unop_expression(
             base_expr,
         )
         r = parser(context)
-        if isinstance(r.result, tuple):
-            return ParseResult(
-                result=UnOpExpression(op=r.result[0], operand=r.result[2]),
+        if r.is_failure:
+            return ParseResult.make_failure(
+                expected=parse_unary_expression.name,
+                context=context,
+                cause=r,
+            )
+
+        if isinstance(r.success.result, tuple):
+            return ParseResult.make_success(
+                result=UnOpExpression(
+                    op=r.success.result[0], operand=r.success.result[2]
+                ),
                 context=r.context,
             )
-        return ParseResult(result=r.result, context=r.context)
+        return ParseResult.make_success(result=r.success.result, context=r.context)
 
     return parse_unary_expression
 
@@ -130,19 +198,28 @@ def _binop_expression(
         ),
     )
 
-    @parser
+    @parser(name="binary-expression")
     def parse_binop_expression(context: ParseContext) -> ParseResult[Expression]:
         """Parse a binary expression."""
 
         r = base_parser(context)
-        if len(r.result[1]) == 0:
-            return ParseResult(result=r.result[0], context=r.context)
-        lhs = r.result[0]
-        for elem in r.result[1]:
+        if r.is_failure:
+            return ParseResult.make_failure(
+                expected=parse_binop_expression.name,
+                context=context,
+                cause=r,
+            )
+
+        if len(r.success.result[1]) == 0:
+            return ParseResult.make_success(
+                result=r.success.result[0], context=r.context
+            )
+        lhs = r.success.result[0]
+        for elem in r.success.result[1]:
             op = elem[1]
             rhs = elem[3]
             lhs = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
-        return ParseResult(result=lhs, context=r.context)
+        return ParseResult.make_success(result=lhs, context=r.context)
 
     return parse_binop_expression
 
@@ -172,16 +249,25 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
         ),
     )
 
-    @parser
+    @parser(name="comparison-expression")
     def parse_comparison_expression(context: ParseContext) -> ParseResult[Expression]:
         """Parse a comparison expression."""
 
         r = p(context)
-        expressions = [r.result[0], *[e[3] for e in r.result[1]]]
-        operators = cast(list[BinOpExpression.OpType], [e[1] for e in r.result[1]])
+        if r.is_failure:
+            return ParseResult.make_failure(
+                expected=parse_comparison_expression.name,
+                context=context,
+                cause=r,
+            )
+
+        expressions = [r.success.result[0], *[e[3] for e in r.success.result[1]]]
+        operators = cast(
+            list[BinOpExpression.OpType], [e[1] for e in r.success.result[1]]
+        )
 
         if len(expressions) == 1:
-            return ParseResult(result=expressions[0], context=r.context)
+            return ParseResult.make_success(result=expressions[0], context=r.context)
 
         conjunction: list[Expression] = []
         for i in range(len(operators)):
@@ -195,39 +281,6 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
         for expr in conjunction[1:]:
             result_expr = BinOpExpression(op="and", lhs=result_expr, rhs=expr)
 
-        return ParseResult(result=result_expr, context=r.context)
+        return ParseResult.make_success(result=result_expr, context=r.context)
 
     return parse_comparison_expression
-
-
-@parser
-def expression(context: ParseContext) -> ParseResult[Expression]:
-    """Parse an expression."""
-
-    power_expression: Parser[Expression] = _binop_expression(primary_expression, "**")
-    factor_expression: Parser[Expression] = _unop_expression(
-        power_expression, "+", "-", "~"
-    )
-    term_expression: Parser[Expression] = _binop_expression(
-        factor_expression, "*", "//", "/", "%", "@"
-    )
-    sum_expression: Parser[Expression] = _binop_expression(term_expression, "+", "-")
-    shift_expression: Parser[Expression] = _binop_expression(sum_expression, "<<", ">>")
-    bw_and_expression: Parser[Expression] = _binop_expression(shift_expression, "&")
-    bw_xor_expression: Parser[Expression] = _binop_expression(bw_and_expression, "^")
-    bw_or_expression: Parser[Expression] = _binop_expression(bw_xor_expression, "|")
-    in_expression: Parser[Expression] = _binop_expression(
-        bw_or_expression, "in", "not in"
-    )
-    comparison_expression: Parser[Expression] = _comparison_expression(in_expression)
-    inversion_expression: Parser[Expression] = _unop_expression(
-        comparison_expression, "not"
-    )
-    conjunction_expression: Parser[Expression] = _binop_expression(
-        inversion_expression, "and"
-    )
-    disjunction_expression: Parser[Expression] = _binop_expression(
-        conjunction_expression, "or"
-    )
-
-    return disjunction_expression(context)
