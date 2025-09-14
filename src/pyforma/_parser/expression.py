@@ -1,3 +1,4 @@
+from typing import LiteralString, cast
 from pyforma._ast import (
     Expression,
     BinOpExpression,
@@ -81,7 +82,7 @@ def primary_expression(context: ParseContext) -> ParseResult[Expression]:
 
 def _unop_expression(
     base_expr: Parser[Expression],
-    *operators: str,
+    *operators: LiteralString,
 ) -> Parser[Expression]:
     """Implements generic unary operator parsing"""
     op_parsers = tuple(literal(op) for op in operators)
@@ -109,7 +110,7 @@ def _unop_expression(
 
 def _binop_expression(
     base_expr: Parser[Expression],
-    *operators: str,
+    *operators: LiteralString,
 ) -> Parser[Expression]:
     """Implements generic binary operator parsing"""
     op_parsers = tuple(literal(op) for op in operators)
@@ -173,7 +174,7 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
 
         r = p(context)
         expressions = [r.result[0], *[e[3] for e in r.result[1]]]
-        operators = [e[1] for e in r.result[1]]
+        operators = cast(list[BinOpExpression.OpType], [e[1] for e in r.result[1]])
 
         if len(expressions) == 1:
             return ParseResult(result=expressions[0], context=r.context)

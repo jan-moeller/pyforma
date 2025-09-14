@@ -77,7 +77,7 @@ class UnOpExpression(Expression):
 class BinOpExpression(Expression):
     """Binary operator expression"""
 
-    op: Literal[
+    type OpType = Literal[
         "**",
         "+",
         "-",
@@ -102,6 +102,8 @@ class BinOpExpression(Expression):
         "and",
         "or",
     ]
+
+    op: OpType
     lhs: Expression
     rhs: Expression
 

@@ -1,7 +1,17 @@
+from typing import LiteralString, overload
+
 from .parse_error import ParseError
 from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .parser import Parser, parser
+
+
+@overload
+def literal[T: LiteralString](s: T) -> Parser[T]: ...
+
+
+@overload
+def literal(s: str) -> Parser[str]: ...
 
 
 def literal(s: str) -> Parser[str]:
