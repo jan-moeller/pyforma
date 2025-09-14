@@ -31,3 +31,4 @@ from .transform_result import transform_success as transform_success
 from .transform_result import transform_consumed as transform_consumed
 from .enclosed import enclosed as enclosed
 from .eof import eof as eof
+from .delimited import delimited as delimited
