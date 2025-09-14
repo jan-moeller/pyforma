@@ -119,7 +119,7 @@ def sequence(*in_parsers: Parser[Any]) -> Parser[tuple[Any, ...]]:
                 results.append(r.result)
 
         except ParseError as e:
-            raise ParseError("", parser=sequence_parser, context=context) from e
+            raise ParseError("", context=context) from e
 
         return ParseResult(context=cur_context, result=tuple(results))
 

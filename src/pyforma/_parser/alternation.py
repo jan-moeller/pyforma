@@ -115,10 +115,6 @@ def alternation(*parsers: Parser) -> Parser:
                 return p(context)
             except ParseError:
                 pass
-        raise ParseError(
-            "none of the alternatives match",
-            parser=parse_alternations,
-            context=context,
-        )
+        raise ParseError("none of the alternatives match", context=context)
 
     return parse_alternations

@@ -32,7 +32,6 @@ def munch(predicate: Callable[[str], bool]) -> Parser[str]:
             raise ParseError(
                 f"Failed to munch with predicate {predicate.__name__}",
                 context=context,
-                parser=parse_munching,
             ) from e
 
     return parse_munching

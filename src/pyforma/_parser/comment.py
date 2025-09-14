@@ -23,7 +23,6 @@ def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
         if not cur_context[:].startswith(syntax.open):
             raise ParseError(
                 f"expected {syntax.open} to start a comment",
-                parser=parse_comment,
                 context=context,
             )
 
@@ -44,6 +43,6 @@ def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
                 result += cur_context.peek()
                 cur_context = cur_context.consume()
 
-        raise ParseError("Unclosed comment", parser=parse_comment, context=context)
+        raise ParseError("Unclosed comment", context=context)
 
     return parse_comment

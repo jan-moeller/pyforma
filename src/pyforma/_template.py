@@ -48,7 +48,6 @@ class Template:
         if not result.context.at_eof():
             raise ParseError(
                 f"Excess content at end of file: {result.context[:]}",
-                parser=parse,
                 context=result.context,
             )
 

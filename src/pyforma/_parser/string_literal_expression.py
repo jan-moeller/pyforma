@@ -14,18 +14,13 @@ def string_literal_expression(context: ParseContext) -> ParseResult[ValueExpress
     """Parse a string literal expression."""
 
     if context.at_eof():
-        raise ParseError(
-            "expected string literal but found EOF",
-            context=context,
-            parser=string_literal_expression,
-        )
+        raise ParseError("expected string literal but found EOF", context=context)
 
     delim = context.peek()
     if delim not in ['"', "'"]:
         raise ParseError(
             f"expected string literal but found '{delim}'",
             context=context,
-            parser=string_literal_expression,
         )
 
     cur_context = context.consume()
@@ -33,9 +28,7 @@ def string_literal_expression(context: ParseContext) -> ParseResult[ValueExpress
     cur_context = text_result.context
 
     if cur_context.at_eof():
-        raise ParseError(
-            "unterminated string", context=context, parser=string_literal_expression
-        )
+        raise ParseError("unterminated string", context=context)
 
     cur_context = cur_context.consume()
 
