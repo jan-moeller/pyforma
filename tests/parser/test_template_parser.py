@@ -11,12 +11,12 @@ from pyforma._parser import (
 @pytest.mark.parametrize(
     "source,expected,remaining",
     [
-        ("", [], ""),
-        ("{#bar#}baz", [Comment("bar"), "baz"], ""),
-        ("foo {#bar#}baz", ["foo ", Comment("bar"), "baz"], ""),
+        ("", (), ""),
+        ("{#bar#}baz", (Comment("bar"), "baz"), ""),
+        ("foo {#bar#}baz", ("foo ", Comment("bar"), "baz"), ""),
         (
             "foo {#bar#}{{baz}} bam",
-            ["foo ", Comment("bar"), IdentifierExpression("baz"), " bam"],
+            ("foo ", Comment("bar"), IdentifierExpression("baz"), " bam"),
             "",
         ),
     ],

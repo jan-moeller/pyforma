@@ -1,3 +1,4 @@
+from functools import cache
 from typing import Any, overload
 
 from .parse_error import ParseError
@@ -98,6 +99,7 @@ def sequence[T1, T2, T3, T4, T5, T6, T7, T8](
 def sequence(*parsers: Parser[Any]) -> Parser[tuple[Any, ...]]: ...
 
 
+@cache
 def sequence(*in_parsers: Parser[Any]) -> Parser[tuple[Any, ...]]:
     """Creates a parser that runs the provided parsers in sequence.
 

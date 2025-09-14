@@ -1,8 +1,11 @@
+from functools import cache
+
 from .literal import literal
 from .not_in import not_in
 from .parser import Parser
 
 
+@cache
 def text(*end_strs: str) -> Parser[str]:
     """Creates a parser of unstructured text
 

@@ -1,3 +1,4 @@
+from functools import cache
 from typing import LiteralString, cast
 from pyforma._ast import (
     Expression,
@@ -80,6 +81,7 @@ def primary_expression(context: ParseContext) -> ParseResult[Expression]:
     return ParseResult(result=expr, context=r.context)
 
 
+@cache
 def _unop_expression(
     base_expr: Parser[Expression],
     *operators: LiteralString,
@@ -108,6 +110,7 @@ def _unop_expression(
     return parse_unary_expression
 
 
+@cache
 def _binop_expression(
     base_expr: Parser[Expression],
     *operators: LiteralString,
@@ -144,6 +147,7 @@ def _binop_expression(
     return parse_binop_expression
 
 
+@cache
 def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
     """Implements chained comparison operator parsing"""
 

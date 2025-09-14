@@ -1,3 +1,4 @@
+from functools import cache
 from typing import LiteralString, overload
 
 from .parse_error import ParseError
@@ -14,6 +15,7 @@ def literal[T: LiteralString](s: T) -> Parser[T]: ...
 def literal(s: str) -> Parser[str]: ...
 
 
+@cache
 def literal(s: str) -> Parser[str]:
     """Creates a parser for a string literal.
 

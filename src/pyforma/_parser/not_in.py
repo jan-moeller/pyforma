@@ -1,9 +1,12 @@
+from functools import cache
+
 from .parse_result import ParseResult
 from .parse_error import ParseError
 from .parse_context import ParseContext
 from .parser import Parser, parser
 
 
+@cache
 def not_in(*parsers: Parser) -> Parser[str]:
     """Creates a parser consuming any input until one of the provided parsers matches
 

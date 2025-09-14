@@ -6,11 +6,11 @@ from pyforma._parser import ParseContext, literal, ParseResult, repetition
 @pytest.mark.parametrize(
     "source,lit,expected",
     [
-        ("", "", []),
-        ("aaa", "a", ["a", "a", "a"]),
-        ("aaa", "aa", ["aa"]),
-        ("foofoobar", "foo", ["foo", "foo"]),
-        ("foo", "bar", []),
+        ("", "", ()),
+        ("aaa", "a", ("a", "a", "a")),
+        ("aaa", "aa", ("aa",)),
+        ("foofoobar", "foo", ("foo", "foo")),
+        ("foo", "bar", ()),
     ],
 )
 def test_repetition(

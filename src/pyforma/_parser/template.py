@@ -1,3 +1,5 @@
+from functools import cache
+
 from .expression_block import expression_block
 from .non_empty import non_empty
 from .alternation import alternation
@@ -10,7 +12,10 @@ from pyforma._ast.expression import Expression
 from pyforma._ast.comment import Comment
 
 
-def template(syntax: TemplateSyntaxConfig) -> Parser[list[str | Comment | Expression]]:
+@cache
+def template(
+    syntax: TemplateSyntaxConfig,
+) -> Parser[tuple[str | Comment | Expression, ...]]:
     """Create a template parser
 
     Args:

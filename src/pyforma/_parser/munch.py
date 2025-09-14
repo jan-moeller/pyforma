@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from functools import cache
 
 from .parse_error import ParseError
 from .parse_context import ParseContext
@@ -6,6 +7,7 @@ from .parse_result import ParseResult
 from .parser import Parser, parser
 
 
+@cache
 def munch(predicate: Callable[[str], bool]) -> Parser[str]:
     """Creates a parser that consumes the maximal prefix for which the predicate returns True
 

@@ -52,41 +52,41 @@ def test_unresolved_identifiers(
 @pytest.mark.parametrize(
     "source,sub,keep_comments,renderers,expected",
     [
-        ("", {}, True, None, nullcontext([])),
-        ("foo", {}, True, None, nullcontext(["foo"])),
+        ("", {}, True, None, nullcontext(())),
+        ("foo", {}, True, None, nullcontext(("foo",))),
         (
             "foo{{bar}}",
             {},
             True,
             None,
-            nullcontext(["foo", IdentifierExpression("bar")]),
+            nullcontext(("foo", IdentifierExpression("bar"))),
         ),
-        ("foo{{bar}}", {"bar": ""}, True, None, nullcontext(["foo"])),
-        ("{{foo}}bar", {"foo": ""}, True, None, nullcontext(["bar"])),
+        ("foo{{bar}}", {"bar": ""}, True, None, nullcontext(("foo",))),
+        ("{{foo}}bar", {"foo": ""}, True, None, nullcontext(("bar",))),
         (
             "{{a}}{{b}}",
             {"a": 42},
             True,
             None,
-            nullcontext(["42", IdentifierExpression("b")]),
+            nullcontext(("42", IdentifierExpression("b"))),
         ),
-        ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(["42y"])),
-        ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext([Comment("foo"), "42"])),
-        ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(["42"])),
+        ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(("42y",))),
+        ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext((Comment("foo"), "42"))),
+        ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(("42",))),
         ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
-        ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(["None"])),
-        ("{{'bar'}}", {}, False, None, nullcontext(["bar"])),
-        ("{{+a}}", {"a": 1}, False, None, nullcontext(["1"])),
-        ("{{-a}}", {"a": 1}, False, None, nullcontext(["-1"])),
-        ("{{~a}}", {"a": 0b0101}, False, None, nullcontext(["-6"])),
-        ("{{not a}}", {"a": True}, False, {bool: str}, nullcontext(["False"])),
+        ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(("None",))),
+        ("{{'bar'}}", {}, False, None, nullcontext(("bar",))),
+        ("{{+a}}", {"a": 1}, False, None, nullcontext(("1",))),
+        ("{{-a}}", {"a": 1}, False, None, nullcontext(("-1",))),
+        ("{{~a}}", {"a": 0b0101}, False, None, nullcontext(("-6",))),
+        ("{{not a}}", {"a": True}, False, {bool: str}, nullcontext(("False",))),
         (
             "{{-a+b}}",
             {"b": 1},
             False,
             None,
             nullcontext(
-                [
+                (
                     BinOpExpression(
                         op="+",
                         lhs=UnOpExpression(
@@ -94,59 +94,65 @@ def test_unresolved_identifiers(
                             operand=IdentifierExpression("a"),
                         ),
                         rhs=ValueExpression(1),
-                    )
-                ]
+                    ),
+                )
             ),
         ),
-        ("{{a+'b'}}", {"a": "fo"}, False, None, nullcontext(["fob"])),
-        ("{{a**b}}", {"a": 3, "b": 2}, False, None, nullcontext(["9"])),
-        ("{{a+b}}", {"a": 1, "b": 2}, False, None, nullcontext(["3"])),
-        ("{{a-b}}", {"a": 2, "b": 1}, False, None, nullcontext(["1"])),
-        ("{{a*b}}", {"a": 2, "b": 1}, False, None, nullcontext(["2"])),
-        ("{{a/b}}", {"a": 1, "b": 2}, False, None, nullcontext(["0.5"])),
-        ("{{a//b}}", {"a": 1, "b": 2}, False, None, nullcontext(["0"])),
-        ("{{a%b}}", {"a": 3, "b": 2}, False, None, nullcontext(["1"])),
-        ("{{a@b}}", {"a": Vec(1, 2), "b": Vec(3, 4)}, False, None, nullcontext(["11"])),
-        ("{{a<<b}}", {"a": 0b1, "b": 1}, False, None, nullcontext(["2"])),
-        ("{{a>>b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(["1"])),
-        ("{{a&b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(["0"])),
-        ("{{a^b}}", {"a": 0b10, "b": 0b11}, False, None, nullcontext(["1"])),
-        ("{{a|b}}", {"a": 0b10, "b": 0b01}, False, None, nullcontext(["3"])),
-        ("{{a in b}}", {"a": 1, "b": []}, False, {bool: str}, nullcontext(["False"])),
+        ("{{a+'b'}}", {"a": "fo"}, False, None, nullcontext(("fob",))),
+        ("{{a**b}}", {"a": 3, "b": 2}, False, None, nullcontext(("9",))),
+        ("{{a+b}}", {"a": 1, "b": 2}, False, None, nullcontext(("3",))),
+        ("{{a-b}}", {"a": 2, "b": 1}, False, None, nullcontext(("1",))),
+        ("{{a*b}}", {"a": 2, "b": 1}, False, None, nullcontext(("2",))),
+        ("{{a/b}}", {"a": 1, "b": 2}, False, None, nullcontext(("0.5",))),
+        ("{{a//b}}", {"a": 1, "b": 2}, False, None, nullcontext(("0",))),
+        ("{{a%b}}", {"a": 3, "b": 2}, False, None, nullcontext(("1",))),
+        (
+            "{{a@b}}",
+            {"a": Vec(1, 2), "b": Vec(3, 4)},
+            False,
+            None,
+            nullcontext(("11",)),
+        ),
+        ("{{a<<b}}", {"a": 0b1, "b": 1}, False, None, nullcontext(("2",))),
+        ("{{a>>b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(("1",))),
+        ("{{a&b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(("0",))),
+        ("{{a^b}}", {"a": 0b10, "b": 0b11}, False, None, nullcontext(("1",))),
+        ("{{a|b}}", {"a": 0b10, "b": 0b01}, False, None, nullcontext(("3",))),
+        ("{{a in b}}", {"a": 1, "b": []}, False, {bool: str}, nullcontext(("False",))),
         (
             "{{1<a<=b==2}}",
             {"a": 2, "b": 2},
             False,
             {bool: str},
-            nullcontext(["True"]),
+            nullcontext(("True",)),
         ),
         (
             "{{1>a>=b!=2}}",
             {"a": 2, "b": 2},
             False,
             {bool: str},
-            nullcontext(["False"]),
+            nullcontext(("False",)),
         ),
         (
             "{{a and b}}",
             {"a": True, "b": False},
             False,
             {bool: str},
-            nullcontext(["False"]),
+            nullcontext(("False",)),
         ),
         (
             "{{a or b}}",
             {"a": True, "b": False},
             False,
             {bool: str},
-            nullcontext(["True"]),
+            nullcontext(("True",)),
         ),
         (
             "{{a not in b}}",
             {"a": 1, "b": []},
             False,
             {bool: str},
-            nullcontext(["True"]),
+            nullcontext(("True",)),
         ),
         (
             "{{a+b*c}}",
@@ -154,7 +160,7 @@ def test_unresolved_identifiers(
             False,
             None,
             nullcontext(
-                [
+                (
                     BinOpExpression(
                         op="+",
                         lhs=IdentifierExpression("a"),
@@ -163,27 +169,27 @@ def test_unresolved_identifiers(
                             lhs=ValueExpression(1),
                             rhs=IdentifierExpression("c"),
                         ),
-                    )
-                ]
+                    ),
+                )
             ),
         ),
-        ("{{a[0]}}", {"a": [1, 2]}, False, None, nullcontext(["1"])),
-        ("{{a[:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(["[1, 2]"])),
-        ("{{a[1:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(["[2]"])),
-        ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[2]"])),
-        ("{{a[:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[1, 2]"])),
-        ("{{a[::2]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(["[1, 3]"])),
+        ("{{a[0]}}", {"a": [1, 2]}, False, None, nullcontext(("1",))),
+        ("{{a[:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(("[1, 2]",))),
+        ("{{a[1:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(("[2]",))),
+        ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[2]",))),
+        ("{{a[:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[1, 2]",))),
+        ("{{a[::2]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[1, 3]",))),
         (
             "{{a[b]}}",
             {"a": [1]},
             False,
             None,
             nullcontext(
-                [
+                (
                     IndexExpression(
                         expression=ValueExpression([1]), index=IdentifierExpression("b")
-                    )
-                ]
+                    ),
+                )
             ),
         ),
         (
@@ -192,7 +198,7 @@ def test_unresolved_identifiers(
             False,
             None,
             nullcontext(
-                [
+                (
                     IndexExpression(
                         expression=IdentifierExpression("a"),
                         index=CallExpression(
@@ -203,8 +209,8 @@ def test_unresolved_identifiers(
                                 ValueExpression(None),
                             ],
                         ),
-                    )
-                ]
+                    ),
+                )
             ),
         ),
     ],
@@ -214,7 +220,7 @@ def test_substitute(
     sub: dict[str, Any],
     keep_comments: bool,
     renderers: dict[type, Callable[[Any], str]] | None,
-    expected: ContextManager[list[str | Comment | Expression]],
+    expected: ContextManager[tuple[str | Comment | Expression, ...]],
 ):
     with expected as e:
         t = Template(source)
@@ -264,7 +270,7 @@ def test_init_with_custom_syntax():
 def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(Path, "read_text", lambda self: "mocked")  # pyright: ignore[reportUnknownArgumentType,reportUnknownLambdaType]
 
-    assert Template(Path())._content == ["mocked"]  # pyright: ignore[reportPrivateUsage]
+    assert Template(Path())._content == ("mocked",)  # pyright: ignore[reportPrivateUsage]
 
 
 def test_init_from_invalid():

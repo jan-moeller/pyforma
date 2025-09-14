@@ -1,3 +1,4 @@
+from functools import cache
 from typing import overload, NoReturn
 
 from .parse_error import ParseError
@@ -98,6 +99,7 @@ def alternation[T1, T2, T3, T4, T5, T6, T7, T8](
 def alternation(*parsers: Parser) -> Parser: ...
 
 
+@cache
 def alternation(*parsers: Parser) -> Parser:
     """Create a parser that runs the provided parsers in sequence until one matches, then returns that result.
 

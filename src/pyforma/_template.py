@@ -87,6 +87,7 @@ class Template:
             renderers = Template.default_renderers
 
         result = Template("")
+        content: list[str | Comment | Expression] = []
 
         def render(v: str) -> str:
             try:
@@ -95,10 +96,10 @@ class Template:
                 raise ValueError(f"No renderer for value of type {type(v)}") from e
 
         def append_str(s: str):
-            if len(result._content) > 0 and isinstance(result._content[-1], str):
-                result._content[-1] += s
+            if len(content) > 0 and isinstance(content[-1], str):
+                content[-1] += s
             else:
-                result._content.append(s)
+                content.append(s)
 
         for elem in self._content:
             match elem:
@@ -107,14 +108,15 @@ class Template:
                     if isinstance(elem, ValueExpression):
                         append_str(render(elem.value))
                     else:
-                        result._content.append(elem)
+                        content.append(elem)
                 case Comment() if keep_comments:
-                    result._content.append(elem)
+                    content.append(elem)
                 case Comment():
                     continue
                 case str():  # pragma: no branch
                     append_str(elem)
 
+        result._content = tuple(content)
         return result
 
     def render(
@@ -138,4 +140,4 @@ class Template:
         t = self.substitute(variables, keep_comments=False, renderers=renderers)
         if len(t.unresolved_identifiers()) != 0:
             raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
-        return "".join(cast(list[str], t._content))
+        return "".join(cast(tuple[str, ...], t._content))

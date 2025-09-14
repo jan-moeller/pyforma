@@ -1,3 +1,5 @@
+from functools import cache
+
 from .whitespace import whitespace
 from .parse_context import ParseContext
 from .parse_result import ParseResult
@@ -9,6 +11,7 @@ from .template_syntax_config import BlockSyntaxConfig
 from pyforma._ast.expression import Expression
 
 
+@cache
 def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
     """Creates an expression block parser using the provided open and close markers
 

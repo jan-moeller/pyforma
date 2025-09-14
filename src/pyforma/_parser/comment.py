@@ -1,3 +1,5 @@
+from functools import cache
+
 from .template_syntax_config import BlockSyntaxConfig
 from .parser import parser, Parser
 from .parse_context import ParseContext
@@ -6,6 +8,7 @@ from .parse_result import ParseResult
 from pyforma._ast import Comment
 
 
+@cache
 def comment(syntax: BlockSyntaxConfig) -> Parser[Comment]:
     """Creates a comment parser using the provided open and close markers
 

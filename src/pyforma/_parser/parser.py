@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import overload, Any, Annotated, TypeVar, Generic
 
 from annotated_types import MinLen
@@ -87,4 +88,4 @@ def parser[T](
         else:  # Pathological case. Have to deliberately be un-pythonic to reach this.
             raise TypeError(f"Function {function} has no name")
 
-    return Parser(function, name)
+    return Parser(lru_cache(function), name)
