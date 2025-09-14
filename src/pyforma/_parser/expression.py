@@ -186,7 +186,7 @@ def _unop_expression(
     """Implements generic unary operator parsing"""
     op_parsers = tuple(literal(op) for op in operators)
 
-    @parser(name="unary-expression")
+    @parser(name=f"unary-expression({', '.join(op.name for op in op_parsers)})")
     def parse_unary_expression(context: ParseContext) -> ParseResult[Expression]:
         parser = alternation(
             sequence(
@@ -224,19 +224,22 @@ def _binop_expression(
     """Implements generic binary operator parsing"""
     op_parsers = tuple(literal(op) for op in operators)
 
-    base_parser = sequence(
-        base_expr,
-        repetition(
-            sequence(
-                whitespace,
-                alternation(*op_parsers),
-                whitespace,
-                base_expr,
-            )
+    base_parser = transform_success(
+        sequence(
+            base_expr,
+            repetition(
+                sequence(
+                    whitespace,
+                    alternation(*op_parsers),
+                    whitespace,
+                    base_expr,
+                )
+            ),
         ),
+        transform=lambda s: (s[0], tuple((e[1], e[3]) for e in s[1])),
     )
 
-    @parser(name="binary-expression")
+    @parser(name=f"binary-expression({', '.join(op.name for op in op_parsers)})")
     def parse_binop_expression(context: ParseContext) -> ParseResult[Expression]:
         """Parse a binary expression."""
 
@@ -248,14 +251,10 @@ def _binop_expression(
                 cause=r,
             )
 
-        if len(r.success.result[1]) == 0:
-            return ParseResult.make_success(
-                result=r.success.result[0], context=r.context
-            )
         lhs = r.success.result[0]
         for elem in r.success.result[1]:
-            op = elem[1]
-            rhs = elem[3]
+            op = elem[0]
+            rhs = elem[1]
             lhs = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
         return ParseResult.make_success(result=lhs, context=r.context)
 

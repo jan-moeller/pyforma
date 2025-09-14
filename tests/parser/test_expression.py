@@ -22,22 +22,22 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
                 expected="expression",
                 cause=ParseResult(
                     ParseFailure(
-                        expected="binary-expression",
+                        expected='binary-expression("or")',
                         cause=ParseResult(
                             ParseFailure(
-                                expected='sequence(binary-expression, repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression)))',
+                                expected='sequence(binary-expression("and"), repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression("and"))))',
                                 cause=ParseResult(
                                     ParseFailure(
-                                        expected="binary-expression",
+                                        expected='binary-expression("and")',
                                         cause=ParseResult(
                                             ParseFailure(
-                                                expected='sequence(unary-expression, repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression)))',
+                                                expected='sequence(unary-expression("not"), repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression("not"))))',
                                                 cause=ParseResult(
                                                     ParseFailure(
-                                                        expected="unary-expression",
+                                                        expected='unary-expression("not")',
                                                         cause=ParseResult(
                                                             ParseFailure(
-                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression), comparison-expression)',
+                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression("not")), comparison-expression)',
                                                             ),
                                                             context=ParseContext(
                                                                 source=" ", index=0
@@ -69,22 +69,22 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
                 expected="expression",
                 cause=ParseResult(
                     ParseFailure(
-                        expected="binary-expression",
+                        expected='binary-expression("or")',
                         cause=ParseResult(
                             ParseFailure(
-                                expected='sequence(binary-expression, repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression)))',
+                                expected='sequence(binary-expression("and"), repetition(sequence(whitespace, alternation("or"), whitespace, binary-expression("and"))))',
                                 cause=ParseResult(
                                     ParseFailure(
-                                        expected="binary-expression",
+                                        expected='binary-expression("and")',
                                         cause=ParseResult(
                                             ParseFailure(
-                                                expected='sequence(unary-expression, repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression)))',
+                                                expected='sequence(unary-expression("not"), repetition(sequence(whitespace, alternation("and"), whitespace, unary-expression("not"))))',
                                                 cause=ParseResult(
                                                     ParseFailure(
-                                                        expected="unary-expression",
+                                                        expected='unary-expression("not")',
                                                         cause=ParseResult(
                                                             ParseFailure(
-                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression), comparison-expression)',
+                                                                expected='alternation(sequence(alternation("not"), whitespace, unary-expression("not")), comparison-expression)',
                                                             ),
                                                             context=ParseContext(
                                                                 source='"foo', index=0
