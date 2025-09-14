@@ -274,23 +274,26 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
         literal(">"),
     )
 
-    p = sequence(
-        base_expr,
-        repetition(
-            sequence(
-                whitespace,
-                cmp_op,
-                whitespace,
-                base_expr,
-            )
+    base_parser = transform_success(
+        sequence(
+            base_expr,
+            repetition(
+                sequence(
+                    whitespace,
+                    cmp_op,
+                    whitespace,
+                    base_expr,
+                )
+            ),
         ),
+        transform=lambda s: (s[0], tuple((e[1], e[3]) for e in s[1])),
     )
 
     @parser(name="comparison-expression")
     def parse_comparison_expression(context: ParseContext) -> ParseResult[Expression]:
         """Parse a comparison expression."""
 
-        r = p(context)
+        r = base_parser(context)
         if r.is_failure:
             return ParseResult.make_failure(
                 expected=parse_comparison_expression.name,
@@ -298,17 +301,15 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
                 cause=r,
             )
 
-        expressions = [r.success.result[0], *[e[3] for e in r.success.result[1]]]
-        operators = cast(
-            list[BinOpExpression.OpType], [e[1] for e in r.success.result[1]]
-        )
+        expressions = [r.success.result[0], *[e[1] for e in r.success.result[1]]]
+        operators = [e[0] for e in r.success.result[1]]
 
         if len(expressions) == 1:
             return ParseResult.make_success(result=expressions[0], context=r.context)
 
         conjunction: list[Expression] = []
         for i in range(len(operators)):
-            op = operators[i]
+            op = cast(BinOpExpression.OpType, operators[i])
             lhs = expressions[i]
             rhs = expressions[i + 1]
             expr = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
