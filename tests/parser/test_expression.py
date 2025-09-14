@@ -301,11 +301,11 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
                         expression=IdentifierExpression("a"),
                         index=CallExpression(
                             callee=ValueExpression(slice),
-                            arguments=[
+                            arguments=(
                                 ValueExpression(None),
                                 ValueExpression(None),
                                 ValueExpression(None),
-                            ],
+                            ),
                         ),
                     ),
                     index=IdentifierExpression("b"),

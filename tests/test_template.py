@@ -202,11 +202,11 @@ def test_unresolved_identifiers(
                         expression=IdentifierExpression("a"),
                         index=CallExpression(
                             callee=ValueExpression(slice),
-                            arguments=[
+                            arguments=(
                                 IdentifierExpression("b"),
                                 ValueExpression(None),
                                 ValueExpression(None),
-                            ],
+                            ),
                         ),
                     ),
                 )

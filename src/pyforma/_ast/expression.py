@@ -194,7 +194,7 @@ class CallExpression(Expression):
     """Call expression"""
 
     callee: Expression
-    arguments: list[Expression]
+    arguments: tuple[Expression, ...]
 
     @override
     def identifiers(self) -> set[str]:
@@ -205,7 +205,7 @@ class CallExpression(Expression):
     @override
     def substitute(self, variables: dict[str, Any]) -> Expression:
         callee = self.callee.substitute(variables)
-        arguments = [arg.substitute(variables) for arg in self.arguments]
+        arguments = tuple(arg.substitute(variables) for arg in self.arguments)
 
         if isinstance(callee, ValueExpression) and all(
             isinstance(arg, ValueExpression) for arg in arguments

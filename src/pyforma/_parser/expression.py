@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import cache
 from typing import LiteralString, cast
 from pyforma._ast import (
@@ -8,7 +9,8 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
-from pyforma._parser.transform_result import transform_success
+from pyforma._parser.transform_result import transform_success, transform_result
+from pyforma._util import defaulted
 from .option import option
 from .repetition import repetition
 from .whitespace import whitespace
@@ -90,54 +92,90 @@ simple_expression: Parser[Expression] = alternation(
 )
 
 
-@parser
-def primary_expression(context: ParseContext) -> ParseResult[Expression]:
-    _slice = sequence(
+@dataclass(frozen=True)
+class Slice:
+    start: Expression
+    stop: Expression
+    step: Expression
+
+
+_none_expr = ValueExpression(None)
+
+_slice = transform_success(
+    sequence(
         option(expression),
         whitespace,
         literal(":"),
         whitespace,
         option(expression),
         option(sequence(whitespace, literal(":"), option(expression))),
-    )
-    indexing = sequence(
+        name="slice",
+    ),
+    transform=lambda s: Slice(
+        defaulted(s[0], _none_expr),
+        defaulted(s[4], _none_expr),
+        defaulted(s[5][2], _none_expr) if s[5] else _none_expr,
+    ),
+)
+
+
+@dataclass(frozen=True)
+class Indexing:
+    index: Expression | Slice
+
+
+_indexing = transform_success(
+    sequence(
         literal("["),
         whitespace,
         alternation(_slice, expression),
         whitespace,
         literal("]"),
-    )
-    p = sequence(
-        simple_expression,
-        repetition(sequence(whitespace, indexing)),
-        name="primary-expression",
-    )
-    r = p(context)
+        name="indexing",
+    ),
+    transform=lambda s: Indexing(s[2]),
+)
 
-    if r.is_failure:
+
+def _transform_primary_expression(
+    result: ParseResult[tuple[Expression, tuple[Indexing, ...]]],
+) -> ParseResult[Expression]:
+    """Transforms the basic parse result into an expression."""
+
+    if result.is_failure:
         return ParseResult.make_failure(
             expected=primary_expression.name,
-            context=context,
-            cause=r,
+            context=result.context,
+            cause=result,
         )
 
-    if len(r.success.result[1]) == 0:
-        return ParseResult.make_success(result=r.success.result[0], context=r.context)
-
-    expr = r.success.result[0]
-    for e in r.success.result[1]:
-        index = e[1][2]
+    expr = result.success.result[0]
+    for e in result.success.result[1]:
+        index = e.index
         if isinstance(index, Expression):
             expr = IndexExpression(expr, index)
         else:  # slice
-            args = [index[0], index[4], index[5][2] if index[5] else None]
+            args = (index.start, index.stop, index.step)
             s = CallExpression(
                 callee=ValueExpression(slice),
-                arguments=[a if a else ValueExpression(None) for a in args],
+                arguments=args,
             )
             expr = IndexExpression(expr, s)
 
-    return ParseResult.make_success(result=expr, context=r.context)
+    return ParseResult.make_success(result=expr, context=result.context)
+
+
+primary_expression = transform_result(
+    transform_success(
+        sequence(
+            simple_expression,
+            repetition(sequence(whitespace, _indexing)),
+            name="primary-expression",
+        ),
+        transform=lambda s: (s[0], tuple(e[1] for e in s[1])),
+    ),
+    transform=_transform_primary_expression,
+)
 
 
 @cache
