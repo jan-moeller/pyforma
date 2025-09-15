@@ -33,3 +33,4 @@ from .enclosed import enclosed as enclosed
 from .eof import eof as eof
 from .delimited import delimited as delimited
 from .lookahead import lookahead as lookahead
+from .negative_lookahead import negative_lookahead as negative_lookahead
