@@ -7,7 +7,7 @@ from pyforma._ast.expression import (
     IndexExpression,
     UnOpExpression,
 )
-from pyforma._parser import ParseContext
+from pyforma._parser.parse_context import ParseContext
 from pyforma._parser.expression import expression
 from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
 
@@ -306,12 +306,100 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
                                 ValueExpression(None),
                                 ValueExpression(None),
                             ),
+                            kw_arguments=(),
                         ),
                     ),
                     index=IdentifierExpression("b"),
                 )
             ),
             7,
+        ),
+        (
+            "a()",
+            ParseSuccess(
+                CallExpression(IdentifierExpression("a"), arguments=(), kw_arguments=())
+            ),
+            3,
+        ),
+        (
+            "a(1)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(ValueExpression(1),),
+                    kw_arguments=(),
+                )
+            ),
+            4,
+        ),
+        (
+            "a(1 ,)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(ValueExpression(1),),
+                    kw_arguments=(),
+                )
+            ),
+            6,
+        ),
+        (
+            "a(1, 2)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(ValueExpression(1), ValueExpression(2)),
+                    kw_arguments=(),
+                )
+            ),
+            7,
+        ),
+        (
+            "a(1,b=2)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(ValueExpression(1),),
+                    kw_arguments=(("b", ValueExpression(2)),),
+                )
+            ),
+            8,
+        ),
+        (
+            "a(b=1)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(),
+                    kw_arguments=(("b", ValueExpression(1)),),
+                )
+            ),
+            6,
+        ),
+        (
+            "a(b=1,)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(),
+                    kw_arguments=(("b", ValueExpression(1)),),
+                )
+            ),
+            7,
+        ),
+        (
+            "a(b=1,c=2)",
+            ParseSuccess(
+                CallExpression(
+                    IdentifierExpression("a"),
+                    arguments=(),
+                    kw_arguments=(
+                        ("b", ValueExpression(1)),
+                        ("c", ValueExpression(2)),
+                    ),
+                )
+            ),
+            10,
         ),
     ],
 )

@@ -50,7 +50,7 @@ def test_unresolved_identifiers(
 
 @pytest.mark.parametrize(
     "source,sub,keep_comments,renderers,expected",
-    [
+    [  # pyright: ignore[reportUnknownArgumentType]
         ("", {}, True, None, nullcontext(())),
         ("foo", {}, True, None, nullcontext(("foo",))),
         (
@@ -207,10 +207,39 @@ def test_unresolved_identifiers(
                                 ValueExpression(None),
                                 ValueExpression(None),
                             ),
+                            kw_arguments=(),
                         ),
                     ),
                 )
             ),
+        ),
+        (
+            "{{a()}}",
+            {"a": lambda: "foo"},
+            False,
+            None,
+            nullcontext(("foo",)),
+        ),
+        (
+            "{{a(1)}}",
+            {"a": lambda x: x + 2},  # pyright: ignore[reportUnknownLambdaType]
+            False,
+            None,
+            nullcontext(("3",)),
+        ),
+        (
+            "{{a(x=1)}}",
+            {"a": lambda x: x + 2},  # pyright: ignore[reportUnknownLambdaType]
+            False,
+            None,
+            nullcontext(("3",)),
+        ),
+        (
+            "{{a()(1,y=2)}}",
+            {"a": lambda: lambda x, y: x + y},  # pyright: ignore[reportUnknownLambdaType]
+            False,
+            None,
+            nullcontext(("3",)),
         ),
     ],
 )

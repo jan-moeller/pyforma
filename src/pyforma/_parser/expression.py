@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from functools import cache
 from typing import LiteralString, cast
+
 from pyforma._ast import (
     Expression,
     BinOpExpression,
@@ -9,8 +10,12 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
-from pyforma._parser.transform_result import transform_success, transform_result
 from pyforma._util import defaulted
+from .negative_lookahead import negative_lookahead
+from .non_empty import non_empty
+from .delimited import delimited
+from .identifier import identifier
+from .transform_result import transform_success, transform_result
 from .option import option
 from .repetition import repetition
 from .whitespace import whitespace
@@ -137,8 +142,89 @@ _indexing = transform_success(
 )
 
 
+@dataclass(frozen=True)
+class CallArguments:
+    args: tuple[Expression, ...] = ()
+    kwargs: tuple[tuple[str, Expression], ...] = ()
+
+
+@cache
+def _call_args(allow_trailing: bool) -> Parser[tuple[Expression, ...]]:
+    return transform_success(
+        delimited(
+            delim=sequence(whitespace, literal(","), whitespace),
+            content=sequence(
+                negative_lookahead(sequence(identifier, whitespace, literal("="))),
+                expression,
+            ),
+            allow_trailing_delim=allow_trailing,
+            name="call-arguments",
+        ),
+        transform=lambda s: tuple(e[1] for e in s),
+    )
+
+
+@cache
+def _call_kwargs(allow_trailing: bool) -> Parser[tuple[tuple[str, Expression], ...]]:
+    return transform_success(
+        option(
+            transform_success(
+                delimited(
+                    delim=sequence(whitespace, literal(","), whitespace),
+                    content=sequence(
+                        identifier,
+                        whitespace,
+                        literal("="),
+                        whitespace,
+                        expression,
+                    ),
+                    allow_trailing_delim=allow_trailing,
+                    name="call-kw-arguments",
+                ),
+                transform=lambda s: tuple((e[0], e[4]) for e in s),
+            )
+        ),
+        transform=lambda s: defaulted(s, cast(tuple[tuple[str, Expression], ...], ())),
+    )
+
+
+_call = transform_success(
+    sequence(
+        literal("("),
+        whitespace,
+        alternation(
+            transform_success(
+                sequence(
+                    non_empty(_call_args(False)),
+                    whitespace,
+                    literal(","),
+                    whitespace,
+                    non_empty(_call_kwargs(True)),
+                    name="args-and-kwargs",
+                ),
+                transform=lambda s: CallArguments(s[0], s[4]),
+            ),
+            transform_success(
+                non_empty(_call_kwargs(True)),
+                transform=lambda s: CallArguments((), s),
+                name="kwargs",
+            ),
+            transform_success(
+                _call_args(True),
+                transform=lambda s: CallArguments(s, ()),
+                name="args",
+            ),
+        ),
+        whitespace,
+        literal(")"),
+        name="call",
+    ),
+    transform=lambda s: s[2],
+)
+
+
 def _transform_primary_expression(
-    result: ParseResult[tuple[Expression, tuple[Indexing, ...]]],
+    result: ParseResult[tuple[Expression, tuple[Indexing | CallArguments, ...]]],
 ) -> ParseResult[Expression]:
     """Transforms the basic parse result into an expression."""
 
@@ -151,16 +237,25 @@ def _transform_primary_expression(
 
     expr = result.success.result[0]
     for e in result.success.result[1]:
-        index = e.index
-        if isinstance(index, Expression):
-            expr = IndexExpression(expr, index)
-        else:  # slice
-            args = (index.start, index.stop, index.step)
-            s = CallExpression(
-                callee=ValueExpression(slice),
-                arguments=args,
-            )
-            expr = IndexExpression(expr, s)
+        match e:
+            case CallArguments():
+                expr = CallExpression(
+                    callee=expr,
+                    arguments=e.args,
+                    kw_arguments=e.kwargs,
+                )
+            case Indexing():  # pragma: no branch
+                index = e.index
+                if isinstance(index, Expression):
+                    expr = IndexExpression(expr, index)
+                else:  # slice
+                    args = (index.start, index.stop, index.step)
+                    s = CallExpression(
+                        callee=ValueExpression(slice),
+                        arguments=args,
+                        kw_arguments=(),
+                    )
+                    expr = IndexExpression(expr, s)
 
     return ParseResult.make_success(result=expr, context=result.context)
 
@@ -169,7 +264,7 @@ primary_expression = transform_result(
     transform_success(
         sequence(
             simple_expression,
-            repetition(sequence(whitespace, _indexing)),
+            repetition(sequence(whitespace, alternation(_indexing, _call))),
             name="primary-expression",
         ),
         transform=lambda s: (s[0], tuple(e[1] for e in s[1])),
