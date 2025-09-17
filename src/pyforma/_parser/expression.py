@@ -10,6 +10,7 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
+from pyforma._ast.expression import AttributeExpression
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
 from .non_empty import non_empty
@@ -188,6 +189,11 @@ def _call_kwargs(allow_trailing: bool) -> Parser[tuple[tuple[str, Expression], .
     )
 
 
+@dataclass(frozen=True)
+class AttributeAccess:
+    identifier: str
+
+
 _call = transform_success(
     sequence(
         literal("("),
@@ -222,9 +228,16 @@ _call = transform_success(
     transform=lambda s: s[2],
 )
 
+_attribute = transform_success(
+    sequence(literal("."), whitespace, identifier),
+    transform=lambda s: AttributeAccess(s[2]),
+)
+
 
 def _transform_primary_expression(
-    result: ParseResult[tuple[Expression, tuple[Indexing | CallArguments, ...]]],
+    result: ParseResult[
+        tuple[Expression, tuple[Indexing | CallArguments | AttributeAccess, ...]]
+    ],
 ) -> ParseResult[Expression]:
     """Transforms the basic parse result into an expression."""
 
@@ -244,6 +257,8 @@ def _transform_primary_expression(
                     arguments=e.args,
                     kw_arguments=e.kwargs,
                 )
+            case AttributeAccess():
+                expr = AttributeExpression(expr, e.identifier)
             case Indexing():  # pragma: no branch
                 index = e.index
                 if isinstance(index, Expression):
@@ -264,7 +279,7 @@ primary_expression = transform_result(
     transform_success(
         sequence(
             simple_expression,
-            repetition(sequence(whitespace, alternation(_indexing, _call))),
+            repetition(sequence(whitespace, alternation(_indexing, _call, _attribute))),
             name="primary-expression",
         ),
         transform=lambda s: (s[0], tuple(e[1] for e in s[1])),

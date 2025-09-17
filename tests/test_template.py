@@ -13,6 +13,7 @@ from pyforma._ast.expression import (
     ValueExpression,
     IndexExpression,
     CallExpression,
+    AttributeExpression,
 )
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -39,6 +40,7 @@ class Vec:
         ("{{+-~bar}}", {"bar"}),
         ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
         ("{{a[b][c:d:e]}}", {"a", "b", "c", "d", "e"}),
+        ("{{a.items()}}", {"a"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -241,6 +243,24 @@ def test_unresolved_identifiers(
             None,
             nullcontext(("3",)),
         ),
+        (
+            '{{a.get("b")}}',
+            {},
+            False,
+            None,
+            nullcontext(
+                (
+                    CallExpression(
+                        callee=AttributeExpression(
+                            object=IdentifierExpression(identifier="a"), attribute="get"
+                        ),
+                        arguments=(ValueExpression(value="b"),),
+                        kw_arguments=(),
+                    ),
+                )
+            ),
+        ),
+        ("{{len(a.keys())}}", {"a": {}, "len": len}, False, None, nullcontext(("0",))),
     ],
 )
 def test_substitute(

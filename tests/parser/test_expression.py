@@ -6,6 +6,7 @@ from pyforma._ast.expression import (
     CallExpression,
     IndexExpression,
     UnOpExpression,
+    AttributeExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._parser.expression import expression
@@ -400,6 +401,16 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess, ParseResult
                 )
             ),
             10,
+        ),
+        ("a.b", ParseSuccess(AttributeExpression(IdentifierExpression("a"), "b")), 3),
+        (
+            "a.b.c",
+            ParseSuccess(
+                AttributeExpression(
+                    AttributeExpression(IdentifierExpression("a"), "b"), "c"
+                )
+            ),
+            5,
         ),
     ],
 )

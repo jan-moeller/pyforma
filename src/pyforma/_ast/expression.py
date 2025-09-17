@@ -220,3 +220,25 @@ class CallExpression(Expression):
             }
             return ValueExpression(callee.value(*args, **kwargs))
         return CallExpression(callee, arguments, kw_arguments)
+
+
+@dataclass(frozen=True)
+class AttributeExpression(Expression):
+    """Attribute expression"""
+
+    object: Expression
+    attribute: str
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.object.identifiers()
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> Expression:
+        object = self.object.substitute(variables)
+        attribute = self.attribute
+
+        if isinstance(object, ValueExpression):
+            return ValueExpression(getattr(object.value, attribute))
+
+        return AttributeExpression(object, attribute)
