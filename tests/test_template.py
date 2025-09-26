@@ -7,6 +7,7 @@ import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
+from pyforma._ast.environment import TemplateEnvironment, WithEnvironment
 from pyforma._ast.expression import (
     BinOpExpression,
     UnOpExpression,
@@ -41,6 +42,7 @@ class Vec:
         ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
         ("{{a[b][c:d:e]}}", {"a", "b", "c", "d", "e"}),
         ("{{a.items()}}", {"a"}),
+        ("{%with a=2 %}{{a+b}}{%endwith%}", {"a", "b"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -261,6 +263,60 @@ def test_unresolved_identifiers(
             ),
         ),
         ("{{len(a.keys())}}", {"a": {}, "len": len}, False, None, nullcontext(("0",))),
+        ("{%with a=2 %}{{a}}{%endwith%}", {}, False, None, nullcontext(("2",))),
+        ("{%with a=2 %}{{a}}{%endwith%}", {"a": 4}, False, None, nullcontext(("2",))),
+        ("{%with a=2 %}{{a+b}}{%endwith%}", {"b": 4}, False, None, nullcontext(("6",))),
+        (
+            "{%with a=2 %}{{a+b}}{%endwith%}",
+            {},
+            False,
+            None,
+            nullcontext(
+                (
+                    TemplateEnvironment(
+                        (
+                            BinOpExpression(
+                                "+", ValueExpression(2), IdentifierExpression("b")
+                            ),
+                        )
+                    ),
+                )
+            ),
+        ),
+        (
+            "{%with a=b+2 %}{{a}}{%endwith%}",
+            {"b": 40},
+            False,
+            None,
+            nullcontext(("42",)),
+        ),
+        (
+            "{%with a=2, b=40 %}{{a+b}}{%endwith%}",
+            {},
+            False,
+            None,
+            nullcontext(("42",)),
+        ),
+        (
+            "{%with a=b,c=d %}{{a+c}}{%endwith%}",
+            {"b": 1},
+            False,
+            None,
+            nullcontext(
+                (
+                    WithEnvironment(
+                        variables={"c": IdentifierExpression("d")},
+                        content=TemplateEnvironment(
+                            (
+                                BinOpExpression(
+                                    "+", ValueExpression(1), IdentifierExpression("c")
+                                ),
+                            )
+                        ),
+                    ),
+                )
+            ),
+        ),
     ],
 )
 def test_substitute(
@@ -277,7 +333,7 @@ def test_substitute(
                 sub,
                 keep_comments=keep_comments,
                 renderers=renderers,
-            )._content  # pyright: ignore[reportPrivateUsage]
+            )._content.content  # pyright: ignore[reportPrivateUsage]
             == e
         )
 
@@ -287,6 +343,7 @@ def test_substitute(
     [
         ("", {}, nullcontext("")),
         ("foo", {}, nullcontext("foo")),
+        ("foo", None, nullcontext("foo")),
         ("foo{{bar}}", {}, pytest.raises(ValueError)),
         ("foo{{bar}}", {"bar": ""}, nullcontext("foo")),
         ("{{foo}}bar", {"foo": ""}, nullcontext("bar")),
@@ -297,7 +354,7 @@ def test_substitute(
 )
 def test_render(
     source: str,
-    sub: dict[str, Any],
+    sub: dict[str, Any] | None,
     expected: ContextManager[str],
 ):
     with expected as e:
@@ -318,7 +375,7 @@ def test_init_with_custom_syntax():
 def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(Path, "read_text", lambda self: "mocked")  # pyright: ignore[reportUnknownArgumentType,reportUnknownLambdaType]
 
-    assert Template(Path())._content == ("mocked",)  # pyright: ignore[reportPrivateUsage]
+    assert Template(Path())._content.content == ("mocked",)  # pyright: ignore[reportPrivateUsage]
 
 
 def test_init_from_invalid():

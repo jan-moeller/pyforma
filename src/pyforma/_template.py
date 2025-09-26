@@ -3,11 +3,8 @@ from pathlib import Path
 from typing import final, Any, cast
 
 from ._ast import Expression, Comment, ValueExpression
-from ._parser import (
-    ParseContext,
-    template,
-    TemplateSyntaxConfig,
-)
+from ._ast.environment import TemplateEnvironment, Environment
+from ._parser import ParseContext, template, TemplateSyntaxConfig
 
 
 @final
@@ -50,16 +47,12 @@ class Template:
             line, column = result.context.line_and_column()
             raise ValueError(f"Invalid template syntax at: {line}:{column}")
 
-        self._content = result.success.result
+        self._content = TemplateEnvironment(result.success.result)
 
     def unresolved_identifiers(self) -> set[str]:
         """Provides access to the set of unresolved identifiers in this template"""
 
-        ids = [e.identifiers() for e in self._content if isinstance(e, Expression)]
-        identifiers: set[str] = set()
-        for s in ids:
-            identifiers.update(s)
-        return identifiers
+        return self._content.identifiers()
 
     def substitute(
         self,
@@ -85,8 +78,8 @@ class Template:
         if renderers is None:
             renderers = Template.default_renderers
 
-        result = Template("")
-        content: list[str | Comment | Expression] = []
+        subbed = self._content.substitute(variables).content
+        content: list[str | Comment | Expression | Environment] = []
 
         def render(v: str) -> str:
             try:
@@ -100,27 +93,33 @@ class Template:
             else:
                 content.append(s)
 
-        for elem in self._content:
-            match elem:
-                case Expression():
-                    elem = elem.substitute(variables)
-                    if isinstance(elem, ValueExpression):
+        def combine_results(
+            content: list[str | Comment | Expression | Environment],
+            elems: tuple[str | Comment | Expression | Environment, ...],
+        ):
+            for elem in elems:
+                match elem:
+                    case ValueExpression():
                         append_str(render(elem.value))
-                    else:
+                    case TemplateEnvironment() if len(elem.identifiers()) == 0:
+                        combine_results(content, elem.content)
+                    case Comment():
+                        if keep_comments:
+                            content.append(elem)
+                    case str():
+                        append_str(elem)
+                    case _:
                         content.append(elem)
-                case Comment() if keep_comments:
-                    content.append(elem)
-                case Comment():
-                    continue
-                case str():  # pragma: no branch
-                    append_str(elem)
 
-        result._content = tuple(content)
+        combine_results(content, subbed)
+
+        result = Template("")
+        result._content = TemplateEnvironment(tuple(content))
         return result
 
     def render(
         self,
-        variables: dict[str, Any],
+        variables: dict[str, Any] | None = None,
         renderers: dict[type, Callable[[Any], str]] | None = None,
     ) -> str:
         """Render the template to string
@@ -135,8 +134,10 @@ class Template:
         Raises:
             ValueError: If some variables in the template remain unresolved after substitution
         """
+        if variables is None:
+            variables = {}
 
         t = self.substitute(variables, keep_comments=False, renderers=renderers)
         if len(t.unresolved_identifiers()) != 0:
             raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
-        return "".join(cast(tuple[str, ...], t._content))
+        return "".join(cast(tuple[str, ...], t._content.content))

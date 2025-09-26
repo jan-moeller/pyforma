@@ -23,6 +23,7 @@ from .repetition import repetition as repetition
 from .template import template as template
 from .identifier import identifier as identifier
 from .expression_block import expression_block as expression_block
+from .environment import environment as environment
 from .template_syntax_config import TemplateSyntaxConfig as TemplateSyntaxConfig
 from .template_syntax_config import BlockSyntaxConfig as BlockSyntaxConfig
 from .option import option as option

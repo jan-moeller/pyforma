@@ -21,10 +21,17 @@ class BlockSyntaxConfig:
 class TemplateSyntaxConfig:
     comment: BlockSyntaxConfig = BlockSyntaxConfig("{#", "#}")
     expression: BlockSyntaxConfig = BlockSyntaxConfig("{{", "}}")
+    environment: BlockSyntaxConfig = BlockSyntaxConfig("{%", "%}")
 
     def __post_init__(self):
         if (
-            len({*asdict(self.comment).values(), *asdict(self.expression).values()})
-            != 4
+            len(
+                {
+                    *asdict(self.comment).values(),
+                    *asdict(self.expression).values(),
+                    *asdict(self.environment).values(),
+                }
+            )
+            != 6
         ):
             raise ValueError("symbols must not overlap!")
