@@ -120,6 +120,7 @@ class Template:
     def render(
         self,
         variables: dict[str, Any] | None = None,
+        *,
         renderers: dict[type, Callable[[Any], str]] | None = None,
     ) -> str:
         """Render the template to string
