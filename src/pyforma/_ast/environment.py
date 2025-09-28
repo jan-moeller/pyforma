@@ -121,3 +121,42 @@ class DefaultEnvironment(Environment):
             return _content
 
         return DefaultEnvironment(_variables, _content)
+
+
+@dataclass(frozen=True)
+class IfEnvironment(Environment):
+    """If-Environment"""
+
+    ifs: tuple[tuple[Expression, TemplateEnvironment], ...]
+    else_content: TemplateEnvironment
+
+    @override
+    def identifiers(self) -> set[str]:
+        return (
+            set[str]().union(
+                *[expr.identifiers() | env.identifiers() for expr, env in self.ifs]
+            )
+            | self.else_content.identifiers()
+        )
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> "Environment":
+        _ifs: tuple[tuple[Expression, TemplateEnvironment], ...] = ()
+
+        for expr, env in self.ifs:
+            _expr = expr.substitute(variables)
+
+            if isinstance(_expr, ValueExpression):
+                if _expr.value:
+                    if len(_ifs) == 0:
+                        return env.substitute(variables)
+                    else:
+                        _ifs += ((_expr, env.substitute(variables)),)
+            else:
+                _ifs += ((_expr, env.substitute(variables)),)
+
+        _else_content = self.else_content.substitute(variables)
+
+        if len(_ifs) == 0:
+            return _else_content
+        return IfEnvironment(_ifs, _else_content)

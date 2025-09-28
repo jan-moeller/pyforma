@@ -9,6 +9,7 @@ from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
 from pyforma._ast.environment import (
     DefaultEnvironment,
+    IfEnvironment,
     TemplateEnvironment,
     WithEnvironment,
 )
@@ -48,6 +49,10 @@ class Vec:
         ("{{a.items()}}", {"a"}),
         ("{%with a=2 %}{{a+b}}{%endwith%}", {"a", "b"}),
         ("{%default a=2 %}{{a+b}}{%enddefault%}", {"a", "b"}),
+        (
+            "{%if a %}{{b}}{%elif c%}{{d}}{%else%}{{e}}{%endif%}",
+            {"a", "b", "c", "d", "e"},
+        ),
     ],
 )
 def test_unresolved_identifiers(
@@ -370,6 +375,68 @@ def test_unresolved_identifiers(
             False,
             None,
             nullcontext(("2",)),
+        ),
+        ("{%if a %}1{%endif%}", {"a": True}, False, None, nullcontext(("1",))),
+        ("{%if a %}1{%endif%}", {"a": False}, False, None, nullcontext(())),
+        ("{%if a %}1{%else%}2{%endif%}", {"a": True}, False, None, nullcontext(("1",))),
+        (
+            "{%if a %}1{%else%}2{%endif%}",
+            {"a": False},
+            False,
+            None,
+            nullcontext(("2",)),
+        ),
+        (
+            "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
+            {"a": False, "b": True},
+            False,
+            None,
+            nullcontext(("2",)),
+        ),
+        (
+            "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
+            {"a": False},
+            False,
+            None,
+            nullcontext(
+                (
+                    IfEnvironment(
+                        ((IdentifierExpression("b"), TemplateEnvironment(("2",))),),
+                        TemplateEnvironment(("3",)),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
+            {"b": False},
+            False,
+            None,
+            nullcontext(
+                (
+                    IfEnvironment(
+                        ((IdentifierExpression("a"), TemplateEnvironment(("1",))),),
+                        TemplateEnvironment(("3",)),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
+            {"b": True},
+            False,
+            None,
+            nullcontext(
+                (
+                    IfEnvironment(
+                        (
+                            (IdentifierExpression("a"), TemplateEnvironment(("1",))),
+                            (ValueExpression(True), TemplateEnvironment(("2",))),
+                        ),
+                        TemplateEnvironment(("3",)),
+                    ),
+                )
+            ),
         ),
     ],
 )
