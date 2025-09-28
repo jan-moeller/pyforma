@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, ContextManager, final
@@ -33,6 +33,9 @@ class Vec:
 
     def __matmul__(self, other: "Vec") -> int:
         return self.x * other.x + self.y * other.y
+
+
+class MyString(str): ...
 
 
 @pytest.mark.parametrize(
@@ -89,12 +92,13 @@ def test_unresolved_identifiers(
         ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext((Comment("foo"), "42"))),
         ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(("42",))),
         ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
-        ("{{bar}}", {"bar": None}, False, {type(None): str}, nullcontext(("None",))),
+        ("{{bar}}", {"bar": None}, False, [(type(None), str)], nullcontext(("None",))),
+        ("{{bar}}", {"bar": MyString("foo")}, False, None, nullcontext(("foo",))),
         ("{{'bar'}}", {}, False, None, nullcontext(("bar",))),
         ("{{+a}}", {"a": 1}, False, None, nullcontext(("1",))),
         ("{{-a}}", {"a": 1}, False, None, nullcontext(("-1",))),
         ("{{~a}}", {"a": 0b0101}, False, None, nullcontext(("-6",))),
-        ("{{not a}}", {"a": True}, False, {bool: str}, nullcontext(("False",))),
+        ("{{not a}}", {"a": True}, False, [(bool, str)], nullcontext(("False",))),
         (
             "{{-a+b}}",
             {"b": 1},
@@ -133,40 +137,46 @@ def test_unresolved_identifiers(
         ("{{a&b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(("0",))),
         ("{{a^b}}", {"a": 0b10, "b": 0b11}, False, None, nullcontext(("1",))),
         ("{{a|b}}", {"a": 0b10, "b": 0b01}, False, None, nullcontext(("3",))),
-        ("{{a in b}}", {"a": 1, "b": []}, False, {bool: str}, nullcontext(("False",))),
+        (
+            "{{a in b}}",
+            {"a": 1, "b": []},
+            False,
+            [(bool, str)],
+            nullcontext(("False",)),
+        ),
         (
             "{{1<a<=b==2}}",
             {"a": 2, "b": 2},
             False,
-            {bool: str},
+            [(bool, str)],
             nullcontext(("True",)),
         ),
         (
             "{{1>a>=b!=2}}",
             {"a": 2, "b": 2},
             False,
-            {bool: str},
+            [(bool, str)],
             nullcontext(("False",)),
         ),
         (
             "{{a and b}}",
             {"a": True, "b": False},
             False,
-            {bool: str},
+            [(bool, str)],
             nullcontext(("False",)),
         ),
         (
             "{{a or b}}",
             {"a": True, "b": False},
             False,
-            {bool: str},
+            [(bool, str)],
             nullcontext(("True",)),
         ),
         (
             "{{a not in b}}",
             {"a": 1, "b": []},
             False,
-            {bool: str},
+            [(bool, str)],
             nullcontext(("True",)),
         ),
         (
@@ -189,11 +199,23 @@ def test_unresolved_identifiers(
             ),
         ),
         ("{{a[0]}}", {"a": [1, 2]}, False, None, nullcontext(("1",))),
-        ("{{a[:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(("[1, 2]",))),
-        ("{{a[1:]}}", {"a": [1, 2]}, False, {list: str}, nullcontext(("[2]",))),
-        ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[2]",))),
-        ("{{a[:-1]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[1, 2]",))),
-        ("{{a[::2]}}", {"a": [1, 2, 3]}, False, {list: str}, nullcontext(("[1, 3]",))),
+        ("{{a[:]}}", {"a": [1, 2]}, False, [(list, str)], nullcontext(("[1, 2]",))),
+        ("{{a[1:]}}", {"a": [1, 2]}, False, [(list, str)], nullcontext(("[2]",))),
+        ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, [(list, str)], nullcontext(("[2]",))),
+        (
+            "{{a[:-1]}}",
+            {"a": [1, 2, 3]},
+            False,
+            [(list, str)],
+            nullcontext(("[1, 2]",)),
+        ),
+        (
+            "{{a[::2]}}",
+            {"a": [1, 2, 3]},
+            False,
+            [(list, str)],
+            nullcontext(("[1, 3]",)),
+        ),
         (
             "{{a[b]}}",
             {"a": [1]},
@@ -475,7 +497,7 @@ def test_substitute(
     source: str,
     sub: dict[str, Any],
     keep_comments: bool,
-    renderers: dict[type, Callable[[Any], str]] | None,
+    renderers: Sequence[tuple[type, Callable[[Any], str]]] | None,
     expected: ContextManager[tuple[str | Comment | Expression, ...]],
 ):
     with expected as e:

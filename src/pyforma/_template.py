@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import final, Any, cast
 
@@ -11,11 +11,11 @@ from ._parser import ParseContext, template, TemplateSyntaxConfig
 class Template:
     """Represents a templated text file and provides functionality to manipulate it"""
 
-    default_renderers: dict[type, Callable[[Any], str]] = {
-        str: str,
-        int: str,
-        float: str,
-    }
+    default_renderers: tuple[tuple[type, Callable[[Any], str]], ...] = (
+        (str, str),
+        (int, str),
+        (float, str),
+    )
 
     def __init__(
         self,
@@ -59,7 +59,7 @@ class Template:
         variables: dict[str, Any],
         *,
         keep_comments: bool = True,
-        renderers: dict[type, Callable[[Any], str]] | None = None,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]] | None = None,
     ) -> "Template":
         """Substitute variables into this template and return the result
 
@@ -82,10 +82,11 @@ class Template:
         content: list[str | Comment | Expression | Environment] = []
 
         def render(v: str) -> str:
-            try:
-                return renderers[type(v)](v)
-            except KeyError as e:
-                raise ValueError(f"No renderer for value of type {type(v)}") from e
+            for t, r in renderers:
+                if isinstance(v, t):
+                    return r(v)
+
+            raise ValueError(f"No renderer for value of type {type(v)}")
 
         def append_str(s: str):
             if len(content) > 0 and isinstance(content[-1], str):
@@ -121,7 +122,7 @@ class Template:
         self,
         variables: dict[str, Any] | None = None,
         *,
-        renderers: dict[type, Callable[[Any], str]] | None = None,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]] | None = None,
     ) -> str:
         """Render the template to string
 

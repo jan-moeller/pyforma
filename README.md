@@ -68,8 +68,8 @@ Partially substitutes variables in the template and evaluates expressions that c
   Dictionary mapping variable identifiers to their values.
 - `keep_comments: bool`:  
   By default, comments are kept until the final rendering. Set to `False` to strip all comments.
-- `renderers: dict[type, Callable[[Any], str]] | None`:  
-  Optional dictionary of renderers for stringification. By default, only `str`, `int` and `float` are
+- `renderers: Sequence[tuple[type, Callable[[Any], str]]] | None`:  
+  Optional sequence of renderers for stringification. By default, only `str`, `int` and `float` are
   rendered to `str` during template substitution. This argument can be used to automatically
   render additional types. Alternatively, the template needs to explicitly format other types as
   `str`.
@@ -90,8 +90,8 @@ Renders a template to a string.
 
 - `variables: dict[str, Any] | None`:  
   Optional dictionary mapping variable identifiers to their values.
-- `renderers: dict[type, Callable[[Any], str]] | None`:  
-  Optional dictionary of renderers for stringification. See `substitute()` for details.
+- `renderers: Sequence[tuple[type, Callable[[Any], str]]] | None`:  
+  Optional sequence of renderers for stringification. See `substitute()` for details.
 
 **Return Value**:
 
