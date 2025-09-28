@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, override
+from typing import Any, override, Annotated
+
+from annotated_types import MinLen
 
 from .expression import Expression, ValueExpression
 from .comment import Comment
@@ -166,27 +168,34 @@ class IfEnvironment(Environment):
 class ForEnvironment(Environment):
     """For-Environment"""
 
-    identifier: str
+    identifier: Annotated[tuple[str, ...], MinLen(1)]
     expression: Expression
     content: TemplateEnvironment
 
     @override
     def identifiers(self) -> set[str]:
-        return self.expression.identifiers() | self.content.identifiers() - {
-            self.identifier
-        }
+        superset = self.expression.identifiers() | self.content.identifiers()
+        return superset - set(self.identifier)
 
     @override
     def substitute(self, variables: dict[str, Any]) -> "Environment":
         _expression = self.expression.substitute(variables)
         _content = self.content.substitute(
-            {k: v for k, v in variables.items() if k != self.identifier}
+            {k: v for k, v in variables.items() if k not in self.identifier}
         )
 
         if isinstance(_expression, ValueExpression):
             _contents: list[TemplateEnvironment] = []
             for value in _expression.value:
-                c = _content.substitute({self.identifier: value})
+                if len(self.identifier) > 1:
+                    if len(self.identifier) != len(value):
+                        raise ValueError(
+                            f"Can't unpack {len(value)} values: expected {len(self.identifier)}"
+                        )
+                    vs = {k: v for k, v in zip(self.identifier, value)}
+                else:
+                    vs = {self.identifier[0]: value}  # pyright: ignore[reportGeneralTypeIssues]
+                c = _content.substitute(vs)
                 _contents.append(c)
             return TemplateEnvironment(tuple(_contents)).substitute({})
         else:

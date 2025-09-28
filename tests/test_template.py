@@ -477,6 +477,27 @@ def test_unresolved_identifiers(
             nullcontext(("123",)),
         ),
         (
+            "{%for a , b in c%}{{a}}{%endfor%}",
+            {"c": [(1, 2), (3, 4)]},
+            False,
+            None,
+            nullcontext(("13",)),
+        ),
+        (
+            "{%for a, b in c%}{{a}}{%endfor%}",
+            {"c": [1, 2]},
+            False,
+            None,
+            pytest.raises(TypeError),
+        ),
+        (
+            "{%for a, b in c%}{{a}}{%endfor%}",
+            {"c": [(1, 2, 3), (4, 5, 6)]},
+            False,
+            None,
+            pytest.raises(ValueError),
+        ),
+        (
             "{%for a in b%}{{a}}{%endfor%}",
             {"a": 1},
             False,
@@ -484,7 +505,7 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     ForEnvironment(
-                        "a",
+                        ("a",),
                         expression=IdentifierExpression("b"),
                         content=TemplateEnvironment((IdentifierExpression("a"),)),
                     ),

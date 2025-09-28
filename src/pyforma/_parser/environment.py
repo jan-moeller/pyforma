@@ -10,6 +10,7 @@ from pyforma._ast.environment import (
 )
 from pyforma._ast.comment import Comment
 from pyforma._ast.expression import Expression
+from .delimited import delimited
 from .identifier import identifier
 from .repetition import repetition
 from .option import option
@@ -197,7 +198,11 @@ def for_environment(
             whitespace,
             literal("for"),
             non_empty(whitespace),
-            identifier,
+            delimited(
+                delim=sequence(whitespace, literal(","), whitespace),
+                content=identifier,
+                allow_trailing_delim=False,
+            ),
             non_empty(whitespace),
             literal("in"),
             non_empty(whitespace),
