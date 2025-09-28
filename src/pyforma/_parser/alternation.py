@@ -115,6 +115,13 @@ def alternation[T1, T2, T3, T4, T5, T6, T7, T8](
 def alternation(*parsers: Parser, name: str | None = None) -> Parser: ...
 
 
+def _farthest_parse(parse_result: ParseResult) -> int:
+    if parse_result.is_success or parse_result.failure.cause is None:
+        return parse_result.context.index
+
+    return _farthest_parse(parse_result.failure.cause)
+
+
 @cache
 def alternation(*parsers: Parser, name: str | None = None) -> Parser:
     """Create a parser that runs the provided parsers in sequence until one matches, then returns that result.
@@ -131,10 +138,16 @@ def alternation(*parsers: Parser, name: str | None = None) -> Parser:
 
     @parser(name=name)
     def parse_alternations(context: ParseContext) -> ParseResult:
+        cause: ParseResult | None = None
         for p in parsers:
             result = p(context)
             if result.is_success:
                 return result
-        return ParseResult.make_failure(expected=name, context=context)
+            elif cause is None or (
+                result.failure.cause
+                and _farthest_parse(cause) < _farthest_parse(result)
+            ):
+                cause = result
+        return ParseResult.make_failure(expected=name, context=context, cause=cause)
 
     return parse_alternations

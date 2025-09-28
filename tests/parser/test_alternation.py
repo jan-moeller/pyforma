@@ -9,6 +9,7 @@ from pyforma._parser import (
     ParseContext,
     ParseSuccess,
     ParseFailure,
+    ParseResult,
 )
 
 
@@ -22,7 +23,36 @@ from pyforma._parser import (
         (
             "fob",
             (literal("foo"), literal("bar")),
-            ParseFailure(expected='alternation("foo", "bar")'),
+            ParseFailure(
+                expected='alternation("foo", "bar")',
+                cause=ParseResult(
+                    ParseFailure(
+                        expected='"foo"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"o"'),
+                            context=ParseContext(source="fob", index=2),
+                        ),
+                    ),
+                    context=ParseContext(source="fob", index=0),
+                ),
+            ),
+        ),
+        (
+            "bao",
+            (literal("foo"), literal("bar")),
+            ParseFailure(
+                expected='alternation("foo", "bar")',
+                cause=ParseResult(
+                    ParseFailure(
+                        expected='"bar"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"r"'),
+                            context=ParseContext(source="bao", index=2),
+                        ),
+                    ),
+                    context=ParseContext(source="bao", index=0),
+                ),
+            ),
         ),
     ],
 )
