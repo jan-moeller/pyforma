@@ -12,6 +12,7 @@ from pyforma._ast.environment import (
     IfEnvironment,
     TemplateEnvironment,
     WithEnvironment,
+    ForEnvironment,
 )
 from pyforma._ast.expression import (
     BinOpExpression,
@@ -53,6 +54,7 @@ class Vec:
             "{%if a %}{{b}}{%elif c%}{{d}}{%else%}{{e}}{%endif%}",
             {"a", "b", "c", "d", "e"},
         ),
+        ("{%for a in b %}{{a}}{%endfor%}", {"b"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -434,6 +436,35 @@ def test_unresolved_identifiers(
                             (ValueExpression(True), TemplateEnvironment(("2",))),
                         ),
                         TemplateEnvironment(("3",)),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{%for a in b%}{{a}}{%endfor%}",
+            {"b": [1, 2, 3]},
+            False,
+            None,
+            nullcontext(("123",)),
+        ),
+        (
+            "{%for a in b%}{{a}}{%endfor%}",
+            {"a": 1, "b": [1, 2, 3]},
+            False,
+            None,
+            nullcontext(("123",)),
+        ),
+        (
+            "{%for a in b%}{{a}}{%endfor%}",
+            {"a": 1},
+            False,
+            None,
+            nullcontext(
+                (
+                    ForEnvironment(
+                        "a",
+                        expression=IdentifierExpression("b"),
+                        content=TemplateEnvironment((IdentifierExpression("a"),)),
                     ),
                 )
             ),

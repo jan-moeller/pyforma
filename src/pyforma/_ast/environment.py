@@ -160,3 +160,34 @@ class IfEnvironment(Environment):
         if len(_ifs) == 0:
             return _else_content
         return IfEnvironment(_ifs, _else_content)
+
+
+@dataclass(frozen=True)
+class ForEnvironment(Environment):
+    """For-Environment"""
+
+    identifier: str
+    expression: Expression
+    content: TemplateEnvironment
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.expression.identifiers() | self.content.identifiers() - {
+            self.identifier
+        }
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> "Environment":
+        _expression = self.expression.substitute(variables)
+        _content = self.content.substitute(
+            {k: v for k, v in variables.items() if k != self.identifier}
+        )
+
+        if isinstance(_expression, ValueExpression):
+            _contents: list[TemplateEnvironment] = []
+            for value in _expression.value:
+                c = _content.substitute({self.identifier: value})
+                _contents.append(c)
+            return TemplateEnvironment(tuple(_contents)).substitute({})
+        else:
+            return ForEnvironment(self.identifier, _expression, _content)

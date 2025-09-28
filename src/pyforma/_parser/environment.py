@@ -6,9 +6,11 @@ from pyforma._ast.environment import (
     TemplateEnvironment,
     WithEnvironment,
     DefaultEnvironment,
+    ForEnvironment,
 )
 from pyforma._ast.comment import Comment
 from pyforma._ast.expression import Expression
+from .identifier import identifier
 from .repetition import repetition
 from .option import option
 from .alternation import alternation
@@ -185,6 +187,50 @@ def if_environment(
 
 
 @cache
+def for_environment(
+    syntax: TemplateSyntaxConfig,
+    template_parser: Parser[tuple[str | Comment | Expression | Environment, ...]],
+) -> Parser[ForEnvironment]:
+    parse_open = transform_success(
+        sequence(
+            literal(syntax.environment.open),
+            whitespace,
+            literal("for"),
+            non_empty(whitespace),
+            identifier,
+            non_empty(whitespace),
+            literal("in"),
+            non_empty(whitespace),
+            expression,
+            whitespace,
+            literal(syntax.environment.close),
+        ),
+        transform=lambda s: (s[4], s[8]),
+    )
+    parse_close = transform_success(
+        sequence(
+            literal(syntax.environment.open),
+            whitespace,
+            literal("endfor"),
+            whitespace,
+            literal(syntax.environment.close),
+        ),
+        transform=lambda s: None,
+    )
+
+    parse = sequence(parse_open, template_parser, parse_close, name="for-environment")
+
+    return transform_success(
+        parse,
+        transform=lambda s: ForEnvironment(
+            identifier=s[0][0],
+            expression=s[0][1],
+            content=TemplateEnvironment(s[1]),
+        ),
+    )
+
+
+@cache
 def environment(
     syntax: TemplateSyntaxConfig,
     template_parser: Parser[tuple[str | Comment | Expression | Environment, ...]],
@@ -202,6 +248,7 @@ def environment(
         with_environment(syntax, template_parser),
         default_environment(syntax, template_parser),
         if_environment(syntax, template_parser),
+        for_environment(syntax, template_parser),
         name="environment",
     )
     return result
