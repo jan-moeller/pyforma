@@ -4,7 +4,6 @@ from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .whitespace import whitespace
 from .sequence import sequence
-from .transform_result import transform_success
 from .eof import eof
 from .expression_block import expression_block
 from .non_empty import non_empty
@@ -32,28 +31,47 @@ def template(
         The template parser
     """
 
-    _parse_text = non_empty(
-        text(
-            syntax.comment.open,
-            syntax.expression.open,
-            syntax.environment.open,
-        )
-    )
-
-    @parser
-    def _parse_template(context: ParseContext) -> ParseResult:
+    @parser(name="template-bit")
+    def _template_bit(
+        context: ParseContext,
+    ) -> ParseResult[str | Comment | Expression | Environment]:
         from .environment import environment
 
-        return repetition(
-            alternation(
-                _parse_text,
-                comment(syntax.comment),
-                expression_block(syntax.expression),
-                environment(syntax, _parse_template),
-            ),
-            name="template",
+        _parse_text = non_empty(
+            text(
+                syntax.comment.open,
+                syntax.expression.open,
+                syntax.environment.open,
+            )
+        )
+
+        return alternation(
+            _parse_text,
+            comment(syntax.comment),
+            expression_block(syntax.expression),
+            environment(syntax, _repeated_template_bit),
+            name=_template_bit.name,
         )(context)
 
-    return transform_success(
-        sequence(_parse_template, whitespace, eof), transform=lambda s: s[0]
-    )
+    @parser(name="repeated-template-bit")
+    def _repeated_template_bit(
+        context: ParseContext,
+    ) -> ParseResult[tuple[str | Comment | Expression | Environment, ...]]:
+        return repetition(_template_bit, name=_repeated_template_bit.name)(context)
+
+    @parser(name="template")
+    def _template(
+        context: ParseContext,
+    ) -> ParseResult[tuple[str | Comment | Expression | Environment, ...]]:
+        result = _repeated_template_bit(context)
+
+        if result.success and sequence(whitespace, eof)(result.context).is_success:
+            return result
+        t = whitespace(result.context)
+        return ParseResult.make_failure(
+            context=context,
+            expected=_template.name,
+            cause=_template_bit(t.context),
+        )
+
+    return _template
