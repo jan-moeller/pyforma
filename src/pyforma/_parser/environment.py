@@ -1,7 +1,11 @@
 from functools import cache
 
-from pyforma._ast.environment import Environment, TemplateEnvironment
-from pyforma._ast.environment import WithEnvironment
+from pyforma._ast.environment import (
+    Environment,
+    TemplateEnvironment,
+    WithEnvironment,
+    DefaultEnvironment,
+)
 from pyforma._ast.comment import Comment
 from pyforma._ast.expression import Expression
 from .alternation import alternation
@@ -55,6 +59,47 @@ def with_environment(
 
 
 @cache
+def default_environment(
+    syntax: TemplateSyntaxConfig,
+    template_parser: Parser[tuple[str | Comment | Expression | Environment, ...]],
+) -> Parser[DefaultEnvironment]:
+    parse_open = transform_success(
+        sequence(
+            literal(syntax.environment.open),
+            whitespace,
+            literal("default"),
+            non_empty(whitespace),
+            _call_kwargs(True),
+            whitespace,
+            literal(syntax.environment.close),
+        ),
+        transform=lambda s: s[4],
+    )
+    parse_close = transform_success(
+        sequence(
+            literal(syntax.environment.open),
+            whitespace,
+            literal("enddefault"),
+            whitespace,
+            literal(syntax.environment.close),
+        ),
+        transform=lambda s: None,
+    )
+
+    parse = sequence(
+        parse_open, template_parser, parse_close, name="default-environment"
+    )
+
+    return transform_success(
+        parse,
+        transform=lambda s: DefaultEnvironment(
+            variables={e[0]: e[1] for e in s[0]},
+            content=TemplateEnvironment(s[1]),
+        ),
+    )
+
+
+@cache
 def environment(
     syntax: TemplateSyntaxConfig,
     template_parser: Parser[tuple[str | Comment | Expression | Environment, ...]],
@@ -70,6 +115,7 @@ def environment(
 
     result = alternation(
         with_environment(syntax, template_parser),
+        default_environment(syntax, template_parser),
         name="environment",
     )
     return result

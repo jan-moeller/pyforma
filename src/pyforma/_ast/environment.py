@@ -84,3 +84,40 @@ class WithEnvironment(Environment):
             return _content
 
         return WithEnvironment(_variables, _content)
+
+
+@dataclass(frozen=True)
+class DefaultEnvironment(Environment):
+    """Default-Environment"""
+
+    variables: dict[str, Expression]
+    content: TemplateEnvironment
+
+    @override
+    def identifiers(self) -> set[str]:
+        return self.content.identifiers() | set().union(
+            *[e.identifiers() for e in self.variables.values()]
+        )
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> Environment:
+        _variables = {
+            iden: expr.substitute(variables) for iden, expr in self.variables.items()
+        }
+        relevant_variables = {
+            iden: expr.value
+            for iden, expr in _variables.items()
+            if isinstance(expr, ValueExpression)
+        } | variables
+        _content = self.content.substitute(relevant_variables)
+        _remaining_identifiers = _content.identifiers()
+        _variables = {
+            iden: expr
+            for iden, expr in _variables.items()
+            if iden in _remaining_identifiers
+        }
+
+        if len(_variables) == 0:
+            return _content
+
+        return DefaultEnvironment(_variables, _content)
