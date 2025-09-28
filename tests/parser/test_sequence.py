@@ -25,9 +25,15 @@ from pyforma._parser import (
             (literal("foo"), literal("bar")),
             ParseFailure(
                 expected='sequence("foo", "bar")',
-                cause=ParseResult.make_failure(
-                    context=ParseContext("foob", index=3),
-                    expected='"bar"',
+                cause=ParseResult(
+                    ParseFailure(
+                        expected='"bar"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"a"'),
+                            context=ParseContext(source="foob", index=4),
+                        ),
+                    ),
+                    context=ParseContext(source="foob", index=3),
                 ),
             ),
         ),

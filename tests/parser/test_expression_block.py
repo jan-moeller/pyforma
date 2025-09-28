@@ -19,7 +19,13 @@ from pyforma._parser import (
             ParseFailure(
                 expected="expression-block",
                 cause=ParseResult(
-                    ParseFailure(expected='"{{"'),
+                    ParseFailure(
+                        expected='"{{"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"{"'),
+                            context=ParseContext(source="", index=0),
+                        ),
+                    ),
                     context=ParseContext(source="", index=0),
                 ),
             ),
@@ -34,7 +40,13 @@ from pyforma._parser import (
             ParseFailure(
                 expected="expression-block",
                 cause=ParseResult(
-                    ParseFailure(expected='"}}"'),
+                    ParseFailure(
+                        expected='"}}"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"}"'),
+                            context=ParseContext(source="{{ foo", index=6),
+                        ),
+                    ),
                     context=ParseContext(source="{{ foo", index=6),
                 ),
             ),

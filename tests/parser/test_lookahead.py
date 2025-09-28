@@ -20,7 +20,13 @@ from pyforma._parser import (
             ParseFailure(
                 expected='lookahead("foo")',
                 cause=ParseResult(
-                    ParseFailure(expected='"foo"'),
+                    ParseFailure(
+                        expected='"foo"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"f"'),
+                            context=ParseContext(source="", index=0),
+                        ),
+                    ),
                     context=ParseContext(source="", index=0),
                 ),
             ),
@@ -33,7 +39,13 @@ from pyforma._parser import (
             ParseFailure(
                 expected='lookahead("foo")',
                 cause=ParseResult(
-                    ParseFailure(expected='"foo"'),
+                    ParseFailure(
+                        expected='"foo"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"o"'),
+                            context=ParseContext(source="fobar", index=2),
+                        ),
+                    ),
                     context=ParseContext(source="fobar", index=0),
                 ),
             ),
