@@ -44,8 +44,14 @@ class Template:
 
         if result.is_failure:
             # TODO: improve error reporting
-            line, column = result.context.line_and_column()
-            raise ValueError(f"Invalid template syntax at: {line}:{column}")
+            exception_message = "Invalid template syntax"
+            while result:
+                line, column = result.context.line_and_column()
+                exception_message += (
+                    f"\n  at {line}:{column}: expected {result.failure.expected}"
+                )
+                result = result.failure.cause
+            raise ValueError(exception_message)
 
         self._content = TemplateEnvironment(result.success.result)
 
