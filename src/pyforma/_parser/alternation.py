@@ -116,10 +116,10 @@ def alternation(*parsers: Parser, name: str | None = None) -> Parser: ...
 
 
 def _farthest_parse(parse_result: ParseResult) -> int:
-    if parse_result.is_success or parse_result.failure.cause is None:
-        return parse_result.context.index
+    while parse_result.is_failure and parse_result.failure.cause is not None:
+        parse_result = parse_result.failure.cause
 
-    return _farthest_parse(parse_result.failure.cause)
+    return parse_result.context.index
 
 
 @cache
