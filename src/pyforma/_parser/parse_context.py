@@ -13,7 +13,9 @@ class ParseContext:
     def __post_init__(self):
         """Makes sure that the index is valid"""
         if self.index < 0 or self.index > len(self.source):
-            raise ValueError("index out of range")
+            raise ValueError(
+                f"index {self.index} out of range 0 ... {len(self.source)}"
+            )
 
     def __getitem__(self, item: int | slice) -> str:
         """Provides indexing and slicing of the remaining input"""
