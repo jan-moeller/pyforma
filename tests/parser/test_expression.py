@@ -5,6 +5,7 @@ from pyforma._ast.expression import (
     BinOpExpression,
     CallExpression,
     IndexExpression,
+    ListExpression,
     UnOpExpression,
     AttributeExpression,
 )
@@ -315,6 +316,17 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
                 )
             ),
             5,
+        ),
+        ("[]", ParseSuccess(ListExpression(())), 2),
+        (
+            "[1, 2]",
+            ParseSuccess(ListExpression((ValueExpression(1), ValueExpression(2)))),
+            6,
+        ),
+        (
+            "[a]",
+            ParseSuccess(ListExpression((IdentifierExpression("a"),))),
+            3,
         ),
     ],
 )

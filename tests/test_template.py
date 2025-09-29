@@ -21,6 +21,7 @@ from pyforma._ast.expression import (
     IndexExpression,
     CallExpression,
     AttributeExpression,
+    ListExpression,
 )
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -58,6 +59,8 @@ class MyString(str): ...
             {"a", "b", "c", "d", "e"},
         ),
         ("{%for a in b %}{{a}}{%endfor%}", {"b"}),
+        ("{{[]}}", set()),
+        ("{{[a, b]}}", {"a", "b"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -511,6 +514,23 @@ def test_unresolved_identifiers(
                     ),
                 )
             ),
+        ),
+        ("{{ [] }}", {}, False, [(list, str)], nullcontext(("[]",))),
+        ("{{ [1] }}", {}, False, [(list, str)], nullcontext(("[1]",))),
+        ("{{ [1,2] }}", {}, False, [(list, str)], nullcontext(("[1, 2]",))),
+        (
+            "{{ [a] }}",
+            {},
+            False,
+            None,
+            nullcontext((ListExpression((IdentifierExpression("a"),)),)),
+        ),
+        (
+            "{{ [a] }}",
+            {"a": 42},
+            False,
+            [(list, str)],
+            nullcontext(("[42]",)),
         ),
     ],
 )

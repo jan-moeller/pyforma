@@ -10,7 +10,7 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
-from pyforma._ast.expression import AttributeExpression
+from pyforma._ast.expression import AttributeExpression, ListExpression
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
 from .non_empty import non_empty
@@ -87,6 +87,19 @@ paren_expression = transform_success(
     transform=lambda s: s[2],
 )
 
+list_expression = transform_success(
+    sequence(
+        literal("["),
+        delimited(
+            delim=sequence(whitespace, literal(","), whitespace),
+            content=expression,
+            allow_trailing_delim=False,
+        ),
+        literal("]"),
+        name="list-expression",
+    ),
+    transform=lambda s: ListExpression(s[1]),
+)
 
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
@@ -94,6 +107,7 @@ simple_expression: Parser[Expression] = alternation(
     floating_point_literal_expression,
     integer_literal_expression,
     paren_expression,
+    list_expression,
     name="simple-expression",
 )
 

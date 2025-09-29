@@ -242,3 +242,23 @@ class AttributeExpression(Expression):
             return ValueExpression(getattr(object.value, attribute))
 
         return AttributeExpression(object, attribute)
+
+
+@dataclass(frozen=True)
+class ListExpression(Expression):
+    """List expression"""
+
+    elements: tuple[Expression, ...]
+
+    @override
+    def identifiers(self) -> set[str]:
+        return set[str]().union(*(e.identifiers() for e in self.elements))
+
+    @override
+    def substitute(self, variables: dict[str, Any]) -> Expression:
+        _elements = tuple(e.substitute(variables) for e in self.elements)
+
+        if all(isinstance(e, ValueExpression) for e in _elements):
+            return ValueExpression([cast(ValueExpression, e).value for e in _elements])
+
+        return ListExpression(_elements)
