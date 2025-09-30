@@ -52,7 +52,7 @@ class MyString(str): ...
         ("{{foo+bar-baz}}", {"foo", "bar", "baz"}),
         ("{{a[b][c:d:e]}}", {"a", "b", "c", "d", "e"}),
         ("{{a.items()}}", {"a"}),
-        ("{%with a=2 %}{{a+b}}{%endwith%}", {"a", "b"}),
+        ("{%with a=2 %}{{a+b}}{%endwith%}", {"b"}),
         ("{%default a=2 %}{{a+b}}{%enddefault%}", {"a", "b"}),
         (
             "{%if a %}{{b}}{%elif c%}{{d}}{%else%}{{e}}{%endif%}",

@@ -57,9 +57,9 @@ class WithEnvironment(Environment):
 
     @override
     def identifiers(self) -> set[str]:
-        return self.content.identifiers() | set().union(
-            *[e.identifiers() for e in self.variables.values()]
-        )
+        content_ids = self.content.identifiers() - self.variables.keys()
+        var_ids = set[str]().union(*[e.identifiers() for e in self.variables.values()])
+        return content_ids | var_ids
 
     @override
     def substitute(self, variables: dict[str, Any]) -> Environment:
