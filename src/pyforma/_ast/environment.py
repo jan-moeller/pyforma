@@ -174,8 +174,8 @@ class ForEnvironment(Environment):
 
     @override
     def identifiers(self) -> set[str]:
-        superset = self.expression.identifiers() | self.content.identifiers()
-        return superset - set(self.identifier)
+        content_ids = self.content.identifiers() - set(self.identifier)
+        return self.expression.identifiers() | content_ids
 
     @override
     def substitute(self, variables: dict[str, Any]) -> "Environment":

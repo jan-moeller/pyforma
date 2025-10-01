@@ -59,6 +59,7 @@ class MyString(str): ...
             {"a", "b", "c", "d", "e"},
         ),
         ("{%for a in b %}{{a}}{%endfor%}", {"b"}),
+        ("{%for a in a %}{{a+b}}{%endfor%}", {"a", "b"}),
         ("{{[]}}", set()),
         ("{{[a, b]}}", {"a", "b"}),
     ],
