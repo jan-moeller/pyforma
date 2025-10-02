@@ -87,7 +87,7 @@ class Template:
         subbed = self._content.substitute(variables).content
         content: list[str | Comment | Expression | Environment] = []
 
-        def render(v: str) -> str:
+        def render(v: Any) -> str:
             for t, r in renderers:
                 if isinstance(v, t):
                     return r(v)
