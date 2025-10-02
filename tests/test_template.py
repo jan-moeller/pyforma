@@ -8,7 +8,6 @@ import pytest
 from pyforma import Template, TemplateSyntaxConfig
 from pyforma._ast import Expression, Comment, IdentifierExpression
 from pyforma._ast.environment import (
-    DefaultEnvironment,
     IfEnvironment,
     TemplateEnvironment,
     WithEnvironment,
@@ -53,7 +52,6 @@ class MyString(str): ...
         ("{{a[b][c:d:e]}}", {"a", "b", "c", "d", "e"}),
         ("{{a.items()}}", {"a"}),
         ("{%with a=2 %}{{a+b}}{%endwith%}", {"b"}),
-        ("{%default a=2 %}{{a+b}}{%enddefault%}", {"a", "b"}),
         (
             "{%if a %}{{b}}{%elif c%}{{d}}{%else%}{{e}}{%endif%}",
             {"a", "b", "c", "d", "e"},
@@ -354,55 +352,6 @@ def test_unresolved_identifiers(
                     ),
                 )
             ),
-        ),
-        ("{%default a=2 %}{{a}}{%enddefault%}", {}, False, None, nullcontext(("2",))),
-        (
-            "{%default a=2 %}{{a}}{%enddefault%}",
-            {"a": 4},
-            False,
-            None,
-            nullcontext(("4",)),
-        ),
-        (
-            "{%default a=2*b %}{{a}}{%enddefault%}",
-            {},
-            False,
-            None,
-            nullcontext(
-                (
-                    DefaultEnvironment(
-                        variables={
-                            "a": BinOpExpression(
-                                "*",
-                                lhs=ValueExpression(2),
-                                rhs=IdentifierExpression("b"),
-                            )
-                        },
-                        content=TemplateEnvironment((IdentifierExpression("a"),)),
-                    ),
-                )
-            ),
-        ),
-        (
-            "{%default a=2*b %}{{a}}{%enddefault%}",
-            {"a": 2},
-            False,
-            None,
-            nullcontext(("2",)),
-        ),
-        (
-            "{%default a=2*b %}{{a}}{%enddefault%}",
-            {"b": 2},
-            False,
-            None,
-            nullcontext(("4",)),
-        ),
-        (
-            "{%default a=2*b %}{{a}}{%enddefault%}",
-            {"a": 2, "b": 4},
-            False,
-            None,
-            nullcontext(("2",)),
         ),
         ("{%if a %}1{%endif%}", {"a": True}, False, None, nullcontext(("1",))),
         ("{%if a %}1{%endif%}", {"a": False}, False, None, nullcontext(())),
