@@ -34,6 +34,7 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         ("1e-3", ParseSuccess(ValueExpression(1e-3)), 4),
         ("True", ParseSuccess(ValueExpression(True)), 4),
         ("False", ParseSuccess(ValueExpression(False)), 5),
+        ("None", ParseSuccess(ValueExpression(None)), 4),
         (
             "-a",
             ParseSuccess(UnOpExpression(op="-", operand=IdentifierExpression("a"))),

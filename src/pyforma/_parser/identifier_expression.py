@@ -28,6 +28,11 @@ def identifier_expression(context: ParseContext) -> ParseResult[Expression]:
                 result=ValueExpression(False),
                 context=r.context,
             )
+        case "None":
+            return ParseResult.make_success(
+                result=ValueExpression(None),
+                context=r.context,
+            )
         case _:
             return ParseResult.make_success(
                 result=IdentifierExpression(r.success.result),
