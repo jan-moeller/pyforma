@@ -156,3 +156,7 @@ class Template:
         if not isinstance(other, Template):
             return NotImplemented
         return self._content == other._content
+
+    @override
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._content!r})"

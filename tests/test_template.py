@@ -574,3 +574,10 @@ def test_eq():
     assert Template("{{foo}}") == Template("{{foo}}")
     assert Template("{{foo}}") != Template("{{bar}}")
     assert Template("{{foo}}") != "{{foo}}"
+
+
+def test_repr():
+    assert (
+        repr(Template("{{foo}}"))
+        == "Template(TemplateEnvironment(content=(IdentifierExpression(identifier='foo'),)))"
+    )
