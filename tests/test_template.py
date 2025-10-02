@@ -482,6 +482,28 @@ def test_unresolved_identifiers(
             [(list, str)],
             nullcontext(("[42]",)),
         ),
+        (
+            "{{t}}",
+            {"t": Template("{{a+b}}"), "a": 40, "b": 2},
+            False,
+            None,
+            nullcontext(("42",)),
+        ),
+        (
+            "{{t}}",
+            {"t": Template("{{a+b}}"), "a": 40},
+            False,
+            None,
+            nullcontext(
+                (
+                    BinOpExpression(
+                        "+",
+                        lhs=ValueExpression(40),
+                        rhs=IdentifierExpression("b"),
+                    ),
+                )
+            ),
+        ),
     ],
 )
 def test_substitute(

@@ -106,7 +106,12 @@ class Template:
             for elem in elems:
                 match elem:
                     case ValueExpression():
-                        append_str(render(elem.value))
+                        match elem.value:
+                            case Template():
+                                t = elem.value.substitute(variables)
+                                combine_results(t._content.content)
+                            case _:
+                                append_str(render(elem.value))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
                         combine_results(elem.content)
                     case Comment():
