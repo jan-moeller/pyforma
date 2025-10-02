@@ -568,3 +568,9 @@ def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
 def test_init_from_invalid():
     with pytest.raises(ValueError):
         _ = Template("foo{{barbau{{")
+
+
+def test_eq():
+    assert Template("{{foo}}") == Template("{{foo}}")
+    assert Template("{{foo}}") != Template("{{bar}}")
+    assert Template("{{foo}}") != "{{foo}}"

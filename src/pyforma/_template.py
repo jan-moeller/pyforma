@@ -1,6 +1,6 @@
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import final, Any, cast
+from typing import final, Any, cast, override
 
 from ._ast import Expression, Comment, ValueExpression
 from ._ast.environment import TemplateEnvironment, Environment
@@ -150,3 +150,9 @@ class Template:
         if len(t.unresolved_identifiers()) != 0:
             raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
         return "".join(cast(tuple[str, ...], t._content.content))
+
+    @override
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Template):
+            return NotImplemented
+        return self._content == other._content
