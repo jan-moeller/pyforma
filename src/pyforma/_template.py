@@ -101,7 +101,6 @@ class Template:
                 content.append(s)
 
         def combine_results(
-            content: list[str | Comment | Expression | Environment],
             elems: tuple[str | Comment | Expression | Environment, ...],
         ):
             for elem in elems:
@@ -109,7 +108,7 @@ class Template:
                     case ValueExpression():
                         append_str(render(elem.value))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
-                        combine_results(content, elem.content)
+                        combine_results(elem.content)
                     case Comment():
                         if keep_comments:
                             content.append(elem)
@@ -118,7 +117,7 @@ class Template:
                     case _:
                         content.append(elem)
 
-        combine_results(content, subbed)
+        combine_results(subbed)
 
         result = Template("")
         result._content = TemplateEnvironment(tuple(content))
