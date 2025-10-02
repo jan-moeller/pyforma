@@ -11,11 +11,7 @@ from ._parser import ParseContext, template, TemplateSyntaxConfig
 class Template:
     """Represents a templated text file and provides functionality to manipulate it"""
 
-    default_renderers: tuple[tuple[type, Callable[[Any], str]], ...] = (
-        (str, str),
-        (int, str),
-        (float, str),
-    )
+    _default_renderers = ((str, str), (int, str), (float, str))
 
     def __init__(
         self,
@@ -83,13 +79,13 @@ class Template:
         """
 
         if renderers is None:
-            renderers = Template.default_renderers
+            renderers = ()
 
         subbed = self._content.substitute(variables).content
         content: list[str | Comment | Expression | Environment] = []
 
         def render(v: Any) -> str:
-            for t, r in renderers:
+            for t, r in [*renderers, *Template._default_renderers]:
                 if isinstance(v, t):
                     return r(v)
 
