@@ -49,6 +49,7 @@ Returns the template object.
 **Exceptions**:
 
 - `ValueError`: The provided input is not a valid template.
+- `OSError`: If a path is passed and the file cannot be opened
 
 #### `pyforma.Template.unresolved_identifiers() -> set[str]`
 

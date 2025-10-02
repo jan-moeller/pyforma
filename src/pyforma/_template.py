@@ -32,6 +32,7 @@ class Template:
 
         Raises:
             ValueError: If the contents cannot be parsed
+            OSError: If a path is passed and the file cannot be opened
         """
         if isinstance(content, Path):
             content = content.read_text()
