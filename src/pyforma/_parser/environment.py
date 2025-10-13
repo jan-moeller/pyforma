@@ -9,6 +9,9 @@ from pyforma._ast.environment import (
 )
 from pyforma._ast.comment import Comment
 from pyforma._ast.expression import Expression
+from .parse_context import ParseContext
+from .parse_result import ParseResult
+from .until import until
 from .delimited import delimited
 from .identifier import identifier
 from .repetition import repetition
@@ -20,8 +23,72 @@ from .literal import literal
 from .whitespace import whitespace
 from .transform_result import transform_success
 from .expression import _call_kwargs, expression  # pyright: ignore[reportPrivateUsage]
-from .parser import Parser
+from .parser import Parser, parser
 from .template_syntax_config import TemplateSyntaxConfig
+
+
+@cache
+def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironment]:
+    parse_open = transform_success(
+        sequence(
+            literal(syntax.environment.open),
+            whitespace,
+            literal("literal"),
+            option(
+                transform_success(
+                    sequence(non_empty(whitespace), identifier),
+                    transform=lambda s: s[1],
+                )
+            ),
+            whitespace,
+            literal(syntax.environment.close),
+        ),
+        transform=lambda s: s[3],
+    )
+
+    @parser
+    def parse_literal_env(context: ParseContext) -> ParseResult[TemplateEnvironment]:
+        iden = parse_open(context)
+        if iden.is_failure:
+            return ParseResult[TemplateEnvironment].make_failure(
+                context=context,
+                expected="literal environment",
+                cause=iden,
+            )
+
+        if iden.success.result:
+            iden_parser = sequence(whitespace, literal(iden.success.result))
+        else:
+            iden_parser = parser(
+                lambda context: ParseResult[str].make_success(
+                    context=context, result=""
+                )
+            )
+
+        parse_close = transform_success(
+            sequence(
+                literal(syntax.environment.open),
+                whitespace,
+                literal("endliteral"),
+                iden_parser,
+                whitespace,
+                literal(syntax.environment.close),
+            ),
+            transform=lambda s: None,
+        )
+        parse_content = until(parse_close)
+
+        parse = sequence(parse_content, parse_close, name="literal-environment")
+        result = parse(iden.context)
+
+        return ParseResult[TemplateEnvironment].make_success(
+            context=result.context,
+            result=TemplateEnvironment(
+                content=(result.success.result[0],),
+            ),
+        )
+
+    return parse_literal_env
 
 
 @cache
@@ -211,6 +278,7 @@ def environment(
         with_environment(syntax, template_parser),
         if_environment(syntax, template_parser),
         for_environment(syntax, template_parser),
+        literal_environment(syntax),
         name="environment",
     )
     return result

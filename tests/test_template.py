@@ -465,6 +465,20 @@ def test_unresolved_identifiers(
                 )
             ),
         ),
+        (
+            "{%literal%}{{a}}{%endliteral%}",
+            {},
+            False,
+            None,
+            nullcontext(("{{a}}",)),
+        ),
+        (
+            "{%literal foo%}{%endliteral%}{%endliteral foo%}",
+            {},
+            False,
+            None,
+            nullcontext(("{%endliteral%}",)),
+        ),
         ("{{ [] }}", {}, False, [(list, str)], nullcontext(("[]",))),
         ("{{ [1] }}", {}, False, [(list, str)], nullcontext(("[1]",))),
         ("{{ [1,2] }}", {}, False, [(list, str)], nullcontext(("[1, 2]",))),
