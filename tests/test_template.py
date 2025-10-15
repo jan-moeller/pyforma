@@ -1,7 +1,7 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Sized
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Any, ContextManager, final
+from typing import Any, ContextManager, final, override
 
 import pytest
 
@@ -36,6 +36,12 @@ class Vec:
 
 
 class MyString(str): ...
+
+
+class SizedNotIterable(Sized):
+    @override
+    def __len__(self) -> int:
+        return 2
 
 
 @pytest.mark.parametrize(
@@ -327,21 +333,25 @@ def test_unresolved_identifiers(
             nullcontext(("42",)),
         ),
         (
-            "{%with a=2, b=40 %}{{a+b}}{%endwith%}",
+            "{%with a=2; b=40 %}{{a+b}}{%endwith%}",
             {},
             False,
             None,
             nullcontext(("42",)),
         ),
         (
-            "{%with a=b,c=d %}{{a+c}}{%endwith%}",
+            "{%with a=b;c=d %}{{a+c}}{%endwith%}",
             {"b": 1},
             False,
             None,
             nullcontext(
                 (
                     WithEnvironment(
-                        variables={"c": IdentifierExpression("d")},
+                        variables=(
+                            WithEnvironment.Destructuring(
+                                ("c",), IdentifierExpression("d")
+                            ),
+                        ),
                         content=TemplateEnvironment(
                             (
                                 BinOpExpression(
@@ -352,6 +362,51 @@ def test_unresolved_identifiers(
                     ),
                 )
             ),
+        ),
+        (
+            "{%with a,b=c %}{{a+b}}{%endwith%}",
+            {"c": (1, 2)},
+            False,
+            None,
+            nullcontext(("3",)),
+        ),
+        (
+            "{%with a,b=c;d,e=f %}{{a+b+d}}{%endwith%}",
+            {"c": (1, 2)},
+            False,
+            None,
+            nullcontext(
+                (
+                    WithEnvironment(
+                        variables=(
+                            WithEnvironment.Destructuring(
+                                ("d", "e"), IdentifierExpression("f")
+                            ),
+                        ),
+                        content=TemplateEnvironment(
+                            (
+                                BinOpExpression(
+                                    "+", ValueExpression(3), IdentifierExpression("d")
+                                ),
+                            )
+                        ),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{%with a,b=c %}{{a+b}}{%endwith%}",
+            {"c": 42},
+            False,
+            None,
+            pytest.raises(TypeError),
+        ),
+        (
+            "{%with a,b=c %}{{a+b}}{%endwith%}",
+            {"c": SizedNotIterable()},
+            False,
+            None,
+            pytest.raises(TypeError),
         ),
         ("{%if a %}1{%endif%}", {"a": True}, False, None, nullcontext(("1",))),
         ("{%if a %}1{%endif%}", {"a": False}, False, None, nullcontext(())),
@@ -448,7 +503,7 @@ def test_unresolved_identifiers(
             {"c": [(1, 2, 3), (4, 5, 6)]},
             False,
             None,
-            pytest.raises(ValueError),
+            pytest.raises(TypeError),
         ),
         (
             "{%for a in b%}{{a}}{%endfor%}",

@@ -22,9 +22,15 @@ from .sequence import sequence
 from .literal import literal
 from .whitespace import whitespace
 from .transform_result import transform_success
-from .expression import _call_kwargs, expression  # pyright: ignore[reportPrivateUsage]
+from .expression import expression
 from .parser import Parser, parser
 from .template_syntax_config import TemplateSyntaxConfig
+
+_destructuring = delimited(
+    delim=sequence(whitespace, literal(","), whitespace),
+    content=identifier,
+    allow_trailing_delim=False,
+)
 
 
 @cache
@@ -102,7 +108,16 @@ def with_environment(
             whitespace,
             literal("with"),
             non_empty(whitespace),
-            _call_kwargs(True),
+            delimited(
+                delim=sequence(whitespace, literal(";"), whitespace),
+                content=transform_success(
+                    sequence(
+                        _destructuring, whitespace, literal("="), whitespace, expression
+                    ),
+                    transform=lambda s: (s[0], s[4]),
+                ),
+                allow_trailing_delim=True,
+            ),
             whitespace,
             literal(syntax.environment.close),
         ),
@@ -124,7 +139,7 @@ def with_environment(
     return transform_success(
         parse,
         transform=lambda s: WithEnvironment(
-            variables={e[0]: e[1] for e in s[0]},
+            variables=tuple(WithEnvironment.Destructuring(e[0], e[1]) for e in s[0]),
             content=TemplateEnvironment(s[1]),
         ),
     )
@@ -223,11 +238,7 @@ def for_environment(
             whitespace,
             literal("for"),
             non_empty(whitespace),
-            delimited(
-                delim=sequence(whitespace, literal(","), whitespace),
-                content=identifier,
-                allow_trailing_delim=False,
-            ),
+            _destructuring,
             non_empty(whitespace),
             literal("in"),
             non_empty(whitespace),

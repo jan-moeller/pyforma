@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sized, Iterable
 from dataclasses import dataclass
 from typing import Any, override, Annotated
 
@@ -6,6 +7,23 @@ from annotated_types import MinLen
 
 from .expression import Expression, ValueExpression
 from .comment import Comment
+
+
+def _destructure_value(identifiers: tuple[str, ...], value: Any) -> dict[str, Any]:
+    if len(identifiers) > 1:
+        if not isinstance(value, Sized):
+            raise TypeError(f"Can't unpack {value}: not sized")
+        elif len(identifiers) != len(value):
+            raise TypeError(
+                f"Can't unpack {value}: has length {len(identifiers)} instead of {len(identifiers)}"
+            )
+        if not isinstance(value, Iterable):
+            raise TypeError(f"Can't unpack {value}: not iterable")
+        vs = {k: v for k, v in zip(identifiers, value)}
+    else:
+        vs = {identifiers[0]: value}  # pyright: ignore[reportGeneralTypeIssues]
+
+    return vs
 
 
 class Environment(ABC):
@@ -52,35 +70,51 @@ class TemplateEnvironment(Environment):
 class WithEnvironment(Environment):
     """With-Environment"""
 
-    variables: dict[str, Expression]
+    @dataclass(frozen=True)
+    class Destructuring:
+        identifiers: tuple[str, ...]
+        expression: Expression
+
+    variables: tuple[Destructuring, ...]
     content: TemplateEnvironment
 
     @override
     def identifiers(self) -> set[str]:
-        content_ids = self.content.identifiers() - self.variables.keys()
-        var_ids = set[str]().union(*[e.identifiers() for e in self.variables.values()])
+        content_ids = self.content.identifiers() - set[str]().union(
+            *[d.identifiers for d in self.variables]
+        )
+        var_ids = set[str]().union(
+            *[d.expression.identifiers() for d in self.variables]
+        )
         return content_ids | var_ids
 
     @override
     def substitute(self, variables: dict[str, Any]) -> Environment:
-        _variables = {
-            iden: expr.substitute(variables) for iden, expr in self.variables.items()
-        }
+        _variables = tuple(
+            WithEnvironment.Destructuring(
+                destructuring.identifiers,
+                destructuring.expression.substitute(variables),
+            )
+            for destructuring in self.variables
+        )
         relevant_variables = {
-            key: val for key, val in variables.items() if key not in _variables
+            key: val
+            for key, val in variables.items()
+            if key not in set[str]().union(*[d.identifiers for d in self.variables])
         }
-        relevant_variables |= {
-            iden: expr.value
-            for iden, expr in _variables.items()
-            if isinstance(expr, ValueExpression)
-        }
+        for destructuring in _variables:
+            if isinstance(destructuring.expression, ValueExpression):
+                relevant_variables |= _destructure_value(
+                    destructuring.identifiers, destructuring.expression.value
+                )
+
         _content = self.content.substitute(relevant_variables)
         _remaining_identifiers = _content.identifiers()
-        _variables = {
-            iden: expr
-            for iden, expr in _variables.items()
-            if iden in _remaining_identifiers
-        }
+        _variables = tuple(
+            destructuring
+            for destructuring in _variables
+            if any(iden in _remaining_identifiers for iden in destructuring.identifiers)
+        )
 
         if len(_variables) == 0:
             return _content
@@ -150,14 +184,7 @@ class ForEnvironment(Environment):
         if isinstance(_expression, ValueExpression):
             _contents: list[TemplateEnvironment] = []
             for value in _expression.value:
-                if len(self.identifier) > 1:
-                    if len(self.identifier) != len(value):
-                        raise ValueError(
-                            f"Can't unpack {len(value)} values: expected {len(self.identifier)}"
-                        )
-                    vs = {k: v for k, v in zip(self.identifier, value)}
-                else:
-                    vs = {self.identifier[0]: value}  # pyright: ignore[reportGeneralTypeIssues]
+                vs = _destructure_value(self.identifier, value)
                 c = _content.substitute(vs)
                 _contents.append(c)
             return TemplateEnvironment(tuple(_contents)).substitute({})
