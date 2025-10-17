@@ -556,7 +556,15 @@ def test_unresolved_identifiers(
             {"t": Template("{{a+b}}"), "a": 40, "b": 2},
             False,
             None,
-            nullcontext(("42",)),
+            nullcontext(
+                (
+                    BinOpExpression(
+                        op="+",
+                        lhs=IdentifierExpression(identifier="a"),
+                        rhs=IdentifierExpression(identifier="b"),
+                    ),
+                )
+            ),
         ),
         (
             "{{t}}",
@@ -566,12 +574,19 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     BinOpExpression(
-                        "+",
-                        lhs=ValueExpression(40),
-                        rhs=IdentifierExpression("b"),
+                        op="+",
+                        lhs=IdentifierExpression(identifier="a"),
+                        rhs=IdentifierExpression(identifier="b"),
                     ),
                 )
             ),
+        ),
+        (
+            "{{t}}",
+            {"t": Template("{{t}}")},
+            False,
+            None,
+            nullcontext((IdentifierExpression(identifier="t"),)),
         ),
     ],
 )

@@ -105,8 +105,7 @@ class Template:
                     case ValueExpression():
                         match elem.value:
                             case Template():
-                                t = elem.value.substitute(variables)
-                                combine_results(t._content.content)
+                                combine_results(elem.value._content.content)
                             case _:
                                 append_str(render(elem.value))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
