@@ -3,12 +3,30 @@ name = "pyforma"
 version = "0.4.0"
 description = "A python template engine"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Jan Möller", email = "drag-on@gmx.de" }
 ]
 requires-python = ">=3.13"
 dependencies = [
     "annotated-types>=0.7.0",
+]
+
+keywords = [
+    "templates",
+    "template-engine",
+    "string-substitution"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Text Processing",
+    "Typing :: Typed",
 ]
 
 [build-system]
