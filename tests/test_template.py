@@ -21,6 +21,7 @@ from pyforma._ast.expression import (
     CallExpression,
     AttributeExpression,
     ListExpression,
+    DictExpression,
 )
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 
@@ -66,6 +67,10 @@ class SizedNotIterable(Sized):
         ("{%for a in a %}{{a+b}}{%endfor%}", {"a", "b"}),
         ("{{[]}}", set()),
         ("{{[a, b]}}", {"a", "b"}),
+        ("{{{}}}", set()),
+        ("{{{a: 1}}}", {"a"}),
+        ("{{{1: a}}}", {"a"}),
+        ("{{{a: b}}}", {"a", "b"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -550,6 +555,56 @@ def test_unresolved_identifiers(
             False,
             [(list, str)],
             nullcontext(("[42]",)),
+        ),
+        (
+            "{{ {} }}",
+            {},
+            False,
+            [(dict, str)],
+            nullcontext(("{}",)),
+        ),
+        (
+            "{{ {1:2} }}",
+            {},
+            False,
+            [(dict, str)],
+            nullcontext(("{1: 2}",)),
+        ),
+        (
+            "{{ {1:2, 3:4} }}",
+            {},
+            False,
+            [(dict, str)],
+            nullcontext(("{1: 2, 3: 4}",)),
+        ),
+        (
+            "{{ {a:b} }}",
+            {},
+            False,
+            [(dict, str)],
+            nullcontext(
+                (
+                    DictExpression(
+                        ((IdentifierExpression("a"), IdentifierExpression("b")),)
+                    ),
+                )
+            ),
+        ),
+        (
+            "{{ {a:b} }}",
+            {"a": "a"},
+            False,
+            [(dict, str)],
+            nullcontext(
+                (DictExpression(((ValueExpression("a"), IdentifierExpression("b")),)),)
+            ),
+        ),
+        (
+            "{{ {a:b} }}",
+            {"a": "a", "b": "b"},
+            False,
+            [(dict, str)],
+            nullcontext(("{'a': 'b'}",)),
         ),
         (
             "{{t}}",

@@ -10,7 +10,7 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
-from pyforma._ast.expression import AttributeExpression, ListExpression
+from pyforma._ast.expression import AttributeExpression, ListExpression, DictExpression
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
 from .non_empty import non_empty
@@ -101,6 +101,23 @@ list_expression = transform_success(
     transform=lambda s: ListExpression(s[1]),
 )
 
+dict_expression = transform_success(
+    sequence(
+        literal("{"),
+        delimited(
+            delim=sequence(whitespace, literal(","), whitespace),
+            content=transform_success(
+                sequence(expression, whitespace, literal(":"), whitespace, expression),
+                transform=lambda s: (s[0], s[4]),
+            ),
+            allow_trailing_delim=False,
+        ),
+        literal("}"),
+        name="dict-expression",
+    ),
+    transform=lambda s: DictExpression(s[1]),
+)
+
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
     string_literal_expression,
@@ -108,6 +125,7 @@ simple_expression: Parser[Expression] = alternation(
     integer_literal_expression,
     paren_expression,
     list_expression,
+    dict_expression,
     name="simple-expression",
 )
 
