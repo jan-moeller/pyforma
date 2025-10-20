@@ -31,6 +31,7 @@ print(template.render({"subject": "World"}))  # Prints "Hello, World! This is Py
 ## Documentation
 
 - [API Documentation](./doc/api.md)
+- [Template Syntax Documentation](./doc/template_syntax.md)
 
 ## Alternatives
 
