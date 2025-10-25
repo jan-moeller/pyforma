@@ -135,6 +135,16 @@ def test_unresolved_identifiers(
         ("{{+a}}", {"a": 1}, False, None, nullcontext(("1",))),
         ("{{-a}}", {"a": 1}, False, None, nullcontext(("-1",))),
         ("{{~a}}", {"a": 0b0101}, False, None, nullcontext(("-6",))),
+        (
+            "{{~a}}",
+            {"a": "foo"},
+            False,
+            None,
+            pytest.raises(
+                TypeError,
+                match=":1:3: Invalid unary operator ~ for value foo of type <class 'str'>",
+            ),
+        ),
         ("{{not a}}", {"a": True}, False, [(bool, str)], nullcontext(("False",))),
         (
             "{{-a+b}}",
@@ -173,6 +183,16 @@ def test_unresolved_identifiers(
             False,
             None,
             nullcontext(("11",)),
+        ),
+        (
+            "{{a@b}}",
+            {"a": 42, "b": "foo"},
+            False,
+            None,
+            pytest.raises(
+                TypeError,
+                match=":1:3: Invalid binary operator @ for values 42 of type <class 'int'> and foo of type <class 'str'>",
+            ),
         ),
         ("{{a<<b}}", {"a": 0b1, "b": 1}, False, None, nullcontext(("2",))),
         ("{{a>>b}}", {"a": 0b10, "b": 1}, False, None, nullcontext(("1",))),
@@ -250,6 +270,16 @@ def test_unresolved_identifiers(
             ),
         ),
         ("{{a[0]}}", {"a": [1, 2]}, False, None, nullcontext(("1",))),
+        (
+            "{{a[0]}}",
+            {"a": 42},
+            False,
+            None,
+            pytest.raises(
+                TypeError,
+                match=":1:3: Invalid indexing expression for value 42 of type <class 'int'> and index 0 of type <class 'int'>",
+            ),
+        ),
         ("{{a[:]}}", {"a": [1, 2]}, False, [(list, str)], nullcontext(("[1, 2]",))),
         ("{{a[1:]}}", {"a": [1, 2]}, False, [(list, str)], nullcontext(("[2]",))),
         ("{{a[1:-1]}}", {"a": [1, 2, 3]}, False, [(list, str)], nullcontext(("[2]",))),
@@ -332,6 +362,16 @@ def test_unresolved_identifiers(
             nullcontext(("foo",)),
         ),
         (
+            "{{a()}}",
+            {"a": 42},
+            False,
+            None,
+            pytest.raises(
+                TypeError,
+                match=r":1:3: Invalid call expression for callee 42 of type <class 'int'> with args \(\) and kwargs \{\}",
+            ),
+        ),
+        (
             "{{a(1)}}",
             {"a": lambda x: x + 2},  # pyright: ignore[reportUnknownLambdaType]
             False,
@@ -375,6 +415,16 @@ def test_unresolved_identifiers(
                         kw_arguments=(),
                     ),
                 )
+            ),
+        ),
+        (
+            '{{a.get("b")}}',
+            {"a": 42},
+            False,
+            None,
+            pytest.raises(
+                TypeError,
+                match=":1:3: Invalid attribute expression for value 42 of type <class 'int'> and attribute get",
             ),
         ),
         ("{{len(a.keys())}}", {"a": {}, "len": len}, False, None, nullcontext(("0",))),

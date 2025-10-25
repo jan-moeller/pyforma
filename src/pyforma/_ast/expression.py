@@ -65,15 +65,22 @@ class UnOpExpression(Expression):
     def substitute(self, variables: dict[str, Any]) -> Expression:
         operand = self.operand.substitute(variables)
         if isinstance(operand, ValueExpression):
-            match self.op:
-                case "+":
-                    return ValueExpression(origin=self.origin, value=+operand.value)
-                case "-":
-                    return ValueExpression(origin=self.origin, value=-operand.value)
-                case "~":
-                    return ValueExpression(origin=self.origin, value=~operand.value)
-                case "not":  # pragma: no branch
-                    return ValueExpression(origin=self.origin, value=not operand.value)
+            try:
+                match self.op:
+                    case "+":
+                        return ValueExpression(origin=self.origin, value=+operand.value)
+                    case "-":
+                        return ValueExpression(origin=self.origin, value=-operand.value)
+                    case "~":
+                        return ValueExpression(origin=self.origin, value=~operand.value)
+                    case "not":  # pragma: no branch
+                        return ValueExpression(
+                            origin=self.origin, value=not operand.value
+                        )
+            except Exception as ex:
+                raise TypeError(
+                    f"{self.origin}: Invalid unary operator {self.op} for value {operand.value} of type {type(operand.value)}"
+                ) from ex
 
         return UnOpExpression(origin=self.origin, op=self.op, operand=operand)
 
@@ -121,99 +128,104 @@ class BinOpExpression(Expression):
         lhs = self.lhs.substitute(variables)
         rhs = self.rhs.substitute(variables)
         if isinstance(lhs, ValueExpression) and isinstance(rhs, ValueExpression):
-            match self.op:
-                case "**":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value**rhs.value
-                    )
-                case "+":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value + rhs.value
-                    )
-                case "-":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value - rhs.value
-                    )
-                case "*":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value * rhs.value
-                    )
-                case "/":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value / rhs.value
-                    )
-                case "//":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value // rhs.value
-                    )
-                case "%":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value % rhs.value
-                    )
-                case "@":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value @ rhs.value
-                    )
-                case "<<":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value << rhs.value
-                    )
-                case ">>":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value >> rhs.value
-                    )
-                case "&":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value & rhs.value
-                    )
-                case "^":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value ^ rhs.value
-                    )
-                case "|":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value | rhs.value
-                    )
-                case "==":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value == rhs.value
-                    )
-                case "!=":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value != rhs.value
-                    )
-                case "<=":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value <= rhs.value
-                    )
-                case "<":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value < rhs.value
-                    )
-                case ">=":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value >= rhs.value
-                    )
-                case ">":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value > rhs.value
-                    )
-                case "in":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value in rhs.value
-                    )
-                case "not in":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value not in rhs.value
-                    )
-                case "and":
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value and rhs.value
-                    )
-                case "or":  # pragma: no branch
-                    return ValueExpression(
-                        origin=self.origin, value=lhs.value or rhs.value
-                    )
+            try:
+                match self.op:
+                    case "**":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value**rhs.value
+                        )
+                    case "+":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value + rhs.value
+                        )
+                    case "-":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value - rhs.value
+                        )
+                    case "*":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value * rhs.value
+                        )
+                    case "/":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value / rhs.value
+                        )
+                    case "//":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value // rhs.value
+                        )
+                    case "%":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value % rhs.value
+                        )
+                    case "@":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value @ rhs.value
+                        )
+                    case "<<":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value << rhs.value
+                        )
+                    case ">>":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value >> rhs.value
+                        )
+                    case "&":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value & rhs.value
+                        )
+                    case "^":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value ^ rhs.value
+                        )
+                    case "|":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value | rhs.value
+                        )
+                    case "==":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value == rhs.value
+                        )
+                    case "!=":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value != rhs.value
+                        )
+                    case "<=":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value <= rhs.value
+                        )
+                    case "<":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value < rhs.value
+                        )
+                    case ">=":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value >= rhs.value
+                        )
+                    case ">":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value > rhs.value
+                        )
+                    case "in":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value in rhs.value
+                        )
+                    case "not in":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value not in rhs.value
+                        )
+                    case "and":
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value and rhs.value
+                        )
+                    case "or":  # pragma: no branch
+                        return ValueExpression(
+                            origin=self.origin, value=lhs.value or rhs.value
+                        )
+            except Exception as ex:
+                raise TypeError(
+                    f"{self.origin}: Invalid binary operator {self.op} for values {lhs.value} of type {type(lhs.value)} and {rhs.value} of type {type(rhs.value)}"
+                ) from ex
         else:
             return BinOpExpression(origin=self.origin, op=self.op, lhs=lhs, rhs=rhs)
 
@@ -236,9 +248,13 @@ class IndexExpression(Expression):
         if isinstance(expression, ValueExpression) and isinstance(
             index, ValueExpression
         ):
-            return ValueExpression(
-                origin=self.origin, value=expression.value[index.value]
-            )
+            try:
+                value = expression.value[index.value]
+            except Exception as ex:
+                raise TypeError(
+                    f"{self.origin}: Invalid indexing expression for value {expression.value} of type {type(expression.value)} and index {index.value} of type {type(index.value)}"
+                ) from ex
+            return ValueExpression(origin=self.origin, value=value)
         return IndexExpression(origin=self.origin, expression=expression, index=index)
 
 
@@ -264,17 +280,25 @@ class CallExpression(Expression):
             (iden, arg.substitute(variables)) for iden, arg in self.kw_arguments
         )
 
-        if isinstance(callee, ValueExpression) and all(
-            isinstance(arg, ValueExpression) for arg in arguments
-        ):
-            args = [cast(ValueExpression, arg).value for arg in arguments]
+        callee_ready = isinstance(callee, ValueExpression)
+        args_ready = all(isinstance(arg, ValueExpression) for arg in arguments)
+        kwargs_ready = all(isinstance(arg, ValueExpression) for _, arg in kw_arguments)
+
+        if callee_ready and args_ready and kwargs_ready:
+            args = tuple(cast(ValueExpression, arg).value for arg in arguments)
             kwargs = {
                 iden: cast(ValueExpression, arg).value for iden, arg in kw_arguments
             }
-            return ValueExpression(
-                origin=self.origin,
-                value=callee.value(*args, **kwargs),
-            )
+            try:
+                return ValueExpression(
+                    origin=self.origin,
+                    value=callee.value(*args, **kwargs),
+                )
+            except Exception as ex:
+                raise TypeError(
+                    f"{self.origin}: Invalid call expression for callee {callee.value} of type {type(callee.value)} with args {args} and kwargs {kwargs}"
+                ) from ex
+
         return CallExpression(
             origin=self.origin,
             callee=callee,
@@ -300,9 +324,14 @@ class AttributeExpression(Expression):
         attribute = self.attribute
 
         if isinstance(object, ValueExpression):
-            return ValueExpression(
-                origin=self.origin, value=getattr(object.value, attribute)
-            )
+            try:
+                return ValueExpression(
+                    origin=self.origin, value=getattr(object.value, attribute)
+                )
+            except Exception as ex:
+                raise TypeError(
+                    f"{self.origin}: Invalid attribute expression for value {object.value} of type {type(object.value)} and attribute {attribute}"
+                ) from ex
 
         return AttributeExpression(
             origin=self.origin, object=object, attribute=attribute
