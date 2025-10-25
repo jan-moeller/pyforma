@@ -140,7 +140,7 @@ def with_environment(
         parse,
         transform=lambda s: WithEnvironment(
             variables=tuple(WithEnvironment.Destructuring(e[0], e[1]) for e in s[0]),
-            content=TemplateEnvironment(s[1]),
+            content=TemplateEnvironment(content=s[1]),
         ),
     )
 
@@ -202,15 +202,15 @@ def if_environment(
             repetition(sequence(parse_elif, template_parser)),
             transform_success(
                 option(sequence(parse_else, template_parser)),
-                transform=lambda s: TemplateEnvironment(())
+                transform=lambda s: TemplateEnvironment(content=())
                 if s is None
-                else TemplateEnvironment(s[1]),
+                else TemplateEnvironment(content=s[1]),
             ),
             parse_close,
         ),
         transform=lambda s: (
             tuple(
-                (expr, TemplateEnvironment(templ))
+                (expr, TemplateEnvironment(content=templ))
                 for expr, templ in ((s[0], s[1]), *s[2])
             ),
             s[3],
@@ -266,7 +266,7 @@ def for_environment(
         transform=lambda s: ForEnvironment(
             identifier=s[0][0],
             expression=s[0][1],
-            content=TemplateEnvironment(s[1]),
+            content=TemplateEnvironment(content=s[1]),
         ),
     )
 

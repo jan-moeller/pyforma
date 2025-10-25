@@ -53,7 +53,7 @@ class Template:
                 result = result.failure.cause
             raise ValueError(exception_message)
 
-        self._content = TemplateEnvironment(result.success.result)
+        self._content = TemplateEnvironment(content=result.success.result)
 
     def unresolved_identifiers(self) -> set[str]:
         """Provides access to the set of unresolved identifiers in this template"""
@@ -124,7 +124,7 @@ class Template:
         combine_results(subbed)
 
         result = Template("")
-        result._content = TemplateEnvironment(tuple(content))
+        result._content = TemplateEnvironment(content=tuple(content))
         return result
 
     def render(

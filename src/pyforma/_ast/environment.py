@@ -36,7 +36,7 @@ class Environment(ABC):
     def substitute(self, variables: dict[str, Any]) -> "Environment": ...
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class TemplateEnvironment(Environment):
     """Template Environment class"""
 
@@ -63,10 +63,10 @@ class TemplateEnvironment(Environment):
                 case Expression() | Environment():  # pragma: no branch
                     return e.substitute(variables)
 
-        return TemplateEnvironment(tuple(subs(e) for e in self.content))
+        return TemplateEnvironment(content=tuple(subs(e) for e in self.content))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class WithEnvironment(Environment):
     """With-Environment"""
 
@@ -119,10 +119,10 @@ class WithEnvironment(Environment):
         if len(_variables) == 0:
             return _content
 
-        return WithEnvironment(_variables, _content)
+        return WithEnvironment(variables=_variables, content=_content)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class IfEnvironment(Environment):
     """If-Environment"""
 
@@ -158,10 +158,10 @@ class IfEnvironment(Environment):
 
         if len(_ifs) == 0:
             return _else_content
-        return IfEnvironment(_ifs, _else_content)
+        return IfEnvironment(ifs=_ifs, else_content=_else_content)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ForEnvironment(Environment):
     """For-Environment"""
 
@@ -187,6 +187,8 @@ class ForEnvironment(Environment):
                 vs = _destructure_value(self.identifier, value)
                 c = _content.substitute(vs)
                 _contents.append(c)
-            return TemplateEnvironment(tuple(_contents)).substitute({})
+            return TemplateEnvironment(content=tuple(_contents)).substitute({})
         else:
-            return ForEnvironment(self.identifier, _expression, _content)
+            return ForEnvironment(
+                identifier=self.identifier, expression=_expression, content=_content
+            )

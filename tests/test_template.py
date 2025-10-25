@@ -321,7 +321,7 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     TemplateEnvironment(
-                        (
+                        content=(
                             BinOpExpression(
                                 "+", ValueExpression(2), IdentifierExpression("b")
                             ),
@@ -358,7 +358,7 @@ def test_unresolved_identifiers(
                             ),
                         ),
                         content=TemplateEnvironment(
-                            (
+                            content=(
                                 BinOpExpression(
                                     "+", ValueExpression(1), IdentifierExpression("c")
                                 ),
@@ -389,7 +389,7 @@ def test_unresolved_identifiers(
                             ),
                         ),
                         content=TemplateEnvironment(
-                            (
+                            content=(
                                 BinOpExpression(
                                     "+", ValueExpression(3), IdentifierExpression("d")
                                 ),
@@ -438,8 +438,13 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     IfEnvironment(
-                        ((IdentifierExpression("b"), TemplateEnvironment(("2",))),),
-                        TemplateEnvironment(("3",)),
+                        ifs=(
+                            (
+                                IdentifierExpression("b"),
+                                TemplateEnvironment(content=("2",)),
+                            ),
+                        ),
+                        else_content=TemplateEnvironment(content=("3",)),
                     ),
                 )
             ),
@@ -452,8 +457,13 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     IfEnvironment(
-                        ((IdentifierExpression("a"), TemplateEnvironment(("1",))),),
-                        TemplateEnvironment(("3",)),
+                        ifs=(
+                            (
+                                IdentifierExpression("a"),
+                                TemplateEnvironment(content=("1",)),
+                            ),
+                        ),
+                        else_content=TemplateEnvironment(content=("3",)),
                     ),
                 )
             ),
@@ -466,11 +476,17 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     IfEnvironment(
-                        (
-                            (IdentifierExpression("a"), TemplateEnvironment(("1",))),
-                            (ValueExpression(True), TemplateEnvironment(("2",))),
+                        ifs=(
+                            (
+                                IdentifierExpression("a"),
+                                TemplateEnvironment(content=("1",)),
+                            ),
+                            (
+                                ValueExpression(True),
+                                TemplateEnvironment(content=("2",)),
+                            ),
                         ),
-                        TemplateEnvironment(("3",)),
+                        else_content=TemplateEnvironment(content=("3",)),
                     ),
                 )
             ),
@@ -518,9 +534,11 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     ForEnvironment(
-                        ("a",),
+                        identifier=("a",),
                         expression=IdentifierExpression("b"),
-                        content=TemplateEnvironment((IdentifierExpression("a"),)),
+                        content=TemplateEnvironment(
+                            content=(IdentifierExpression("a"),)
+                        ),
                     ),
                 )
             ),
