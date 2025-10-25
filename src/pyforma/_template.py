@@ -31,13 +31,16 @@ class Template:
             OSError: If a path is passed and the file cannot be opened
         """
         if isinstance(content, Path):
+            source_id = str(content)
             content = content.read_text()
+        else:
+            source_id = ""
 
         if syntax is None:
             syntax = TemplateSyntaxConfig()
 
         parse = template(syntax)
-        result = parse(ParseContext(content))
+        result = parse(ParseContext(source=content, source_id=source_id))
 
         if result.is_failure:
             # TODO: improve error reporting

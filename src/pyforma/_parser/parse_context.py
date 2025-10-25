@@ -28,6 +28,7 @@ class ParseContext:
     source: str  # Complete input string
     index: int = 0  # Index of the next character to consume
     position: tuple[int, int] = (0, 0)  # 1-based; default means auto-compute.
+    source_id: str = ""
 
     def __post_init__(self):
         """Makes sure that the index is valid"""
