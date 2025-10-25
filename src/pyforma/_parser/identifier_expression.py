@@ -20,21 +20,21 @@ def identifier_expression(context: ParseContext) -> ParseResult[Expression]:
     match r.success.result:
         case "True":
             return ParseResult.make_success(
-                result=ValueExpression(True),
+                result=ValueExpression(value=True),
                 context=r.context,
             )
         case "False":
             return ParseResult.make_success(
-                result=ValueExpression(False),
+                result=ValueExpression(value=False),
                 context=r.context,
             )
         case "None":
             return ParseResult.make_success(
-                result=ValueExpression(None),
+                result=ValueExpression(value=None),
                 context=r.context,
             )
         case _:
             return ParseResult.make_success(
-                result=IdentifierExpression(r.success.result),
+                result=IdentifierExpression(identifier=r.success.result),
                 context=r.context,
             )

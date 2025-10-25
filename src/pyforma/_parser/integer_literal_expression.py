@@ -46,6 +46,6 @@ integer_literal_expression = transform_consumed(
         default=_dec_int,
         name="integer literal",
     ),
-    transform=lambda s: ValueExpression(ast.literal_eval(s)),
+    transform=lambda s: ValueExpression(value=ast.literal_eval(s)),
 )
 """Parser for python-like integer literals"""

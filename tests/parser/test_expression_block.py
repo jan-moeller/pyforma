@@ -31,10 +31,10 @@ from pyforma._parser import (
             ),
             0,
         ),
-        ("{{foo}}", ParseSuccess(IdentifierExpression("foo")), 7),
-        ("{{ foo }}", ParseSuccess(IdentifierExpression("foo")), 9),
-        ("{{ foo }}bar", ParseSuccess(IdentifierExpression("foo")), 9),
-        ("{{'foo'}}bar", ParseSuccess(ValueExpression("foo")), 9),
+        ("{{foo}}", ParseSuccess(IdentifierExpression(identifier="foo")), 7),
+        ("{{ foo }}", ParseSuccess(IdentifierExpression(identifier="foo")), 9),
+        ("{{ foo }}bar", ParseSuccess(IdentifierExpression(identifier="foo")), 9),
+        ("{{'foo'}}bar", ParseSuccess(ValueExpression(value="foo")), 9),
         (
             "{{ foo",
             ParseFailure(

@@ -90,7 +90,7 @@ def test_unresolved_identifiers(
             {},
             True,
             None,
-            nullcontext(("foo", IdentifierExpression("bar"))),
+            nullcontext(("foo", IdentifierExpression(identifier="bar"))),
         ),
         ("foo{{bar}}", {"bar": ""}, True, None, nullcontext(("foo",))),
         ("{{foo}}bar", {"foo": ""}, True, None, nullcontext(("bar",))),
@@ -99,7 +99,7 @@ def test_unresolved_identifiers(
             {"a": 42},
             True,
             None,
-            nullcontext(("42", IdentifierExpression("b"))),
+            nullcontext(("42", IdentifierExpression(identifier="b"))),
         ),
         ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(("42y",))),
         ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext((Comment("foo"), "42"))),
@@ -123,9 +123,9 @@ def test_unresolved_identifiers(
                         op="+",
                         lhs=UnOpExpression(
                             op="-",
-                            operand=IdentifierExpression("a"),
+                            operand=IdentifierExpression(identifier="a"),
                         ),
-                        rhs=ValueExpression(1),
+                        rhs=ValueExpression(value=1),
                     ),
                 )
             ),
@@ -201,11 +201,11 @@ def test_unresolved_identifiers(
                 (
                     BinOpExpression(
                         op="+",
-                        lhs=IdentifierExpression("a"),
+                        lhs=IdentifierExpression(identifier="a"),
                         rhs=BinOpExpression(
                             op="*",
-                            lhs=ValueExpression(1),
-                            rhs=IdentifierExpression("c"),
+                            lhs=ValueExpression(value=1),
+                            rhs=IdentifierExpression(identifier="c"),
                         ),
                     ),
                 )
@@ -237,7 +237,8 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     IndexExpression(
-                        expression=ValueExpression([1]), index=IdentifierExpression("b")
+                        expression=ValueExpression(value=[1]),
+                        index=IdentifierExpression(identifier="b"),
                     ),
                 )
             ),
@@ -250,13 +251,13 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     IndexExpression(
-                        expression=IdentifierExpression("a"),
+                        expression=IdentifierExpression(identifier="a"),
                         index=CallExpression(
-                            callee=ValueExpression(slice),
+                            callee=ValueExpression(value=slice),
                             arguments=(
-                                IdentifierExpression("b"),
-                                ValueExpression(None),
-                                ValueExpression(None),
+                                IdentifierExpression(identifier="b"),
+                                ValueExpression(value=None),
+                                ValueExpression(value=None),
                             ),
                             kw_arguments=(),
                         ),
@@ -323,7 +324,9 @@ def test_unresolved_identifiers(
                     TemplateEnvironment(
                         content=(
                             BinOpExpression(
-                                "+", ValueExpression(2), IdentifierExpression("b")
+                                op="+",
+                                lhs=ValueExpression(value=2),
+                                rhs=IdentifierExpression(identifier="b"),
                             ),
                         )
                     ),
@@ -354,13 +357,15 @@ def test_unresolved_identifiers(
                     WithEnvironment(
                         variables=(
                             WithEnvironment.Destructuring(
-                                ("c",), IdentifierExpression("d")
+                                ("c",), IdentifierExpression(identifier="d")
                             ),
                         ),
                         content=TemplateEnvironment(
                             content=(
                                 BinOpExpression(
-                                    "+", ValueExpression(1), IdentifierExpression("c")
+                                    op="+",
+                                    lhs=ValueExpression(value=1),
+                                    rhs=IdentifierExpression(identifier="c"),
                                 ),
                             )
                         ),
@@ -385,13 +390,15 @@ def test_unresolved_identifiers(
                     WithEnvironment(
                         variables=(
                             WithEnvironment.Destructuring(
-                                ("d", "e"), IdentifierExpression("f")
+                                ("d", "e"), IdentifierExpression(identifier="f")
                             ),
                         ),
                         content=TemplateEnvironment(
                             content=(
                                 BinOpExpression(
-                                    "+", ValueExpression(3), IdentifierExpression("d")
+                                    op="+",
+                                    lhs=ValueExpression(value=3),
+                                    rhs=IdentifierExpression(identifier="d"),
                                 ),
                             )
                         ),
@@ -440,7 +447,7 @@ def test_unresolved_identifiers(
                     IfEnvironment(
                         ifs=(
                             (
-                                IdentifierExpression("b"),
+                                IdentifierExpression(identifier="b"),
                                 TemplateEnvironment(content=("2",)),
                             ),
                         ),
@@ -459,7 +466,7 @@ def test_unresolved_identifiers(
                     IfEnvironment(
                         ifs=(
                             (
-                                IdentifierExpression("a"),
+                                IdentifierExpression(identifier="a"),
                                 TemplateEnvironment(content=("1",)),
                             ),
                         ),
@@ -478,11 +485,11 @@ def test_unresolved_identifiers(
                     IfEnvironment(
                         ifs=(
                             (
-                                IdentifierExpression("a"),
+                                IdentifierExpression(identifier="a"),
                                 TemplateEnvironment(content=("1",)),
                             ),
                             (
-                                ValueExpression(True),
+                                ValueExpression(value=True),
                                 TemplateEnvironment(content=("2",)),
                             ),
                         ),
@@ -535,9 +542,9 @@ def test_unresolved_identifiers(
                 (
                     ForEnvironment(
                         identifier=("a",),
-                        expression=IdentifierExpression("b"),
+                        expression=IdentifierExpression(identifier="b"),
                         content=TemplateEnvironment(
-                            content=(IdentifierExpression("a"),)
+                            content=(IdentifierExpression(identifier="a"),)
                         ),
                     ),
                 )
@@ -565,7 +572,9 @@ def test_unresolved_identifiers(
             {},
             False,
             None,
-            nullcontext((ListExpression((IdentifierExpression("a"),)),)),
+            nullcontext(
+                (ListExpression(elements=(IdentifierExpression(identifier="a"),)),)
+            ),
         ),
         (
             "{{ [a] }}",
@@ -603,7 +612,12 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     DictExpression(
-                        ((IdentifierExpression("a"), IdentifierExpression("b")),)
+                        elements=(
+                            (
+                                IdentifierExpression(identifier="a"),
+                                IdentifierExpression(identifier="b"),
+                            ),
+                        )
                     ),
                 )
             ),
@@ -614,7 +628,16 @@ def test_unresolved_identifiers(
             False,
             [(dict, str)],
             nullcontext(
-                (DictExpression(((ValueExpression("a"), IdentifierExpression("b")),)),)
+                (
+                    DictExpression(
+                        elements=(
+                            (
+                                ValueExpression(value="a"),
+                                IdentifierExpression(identifier="b"),
+                            ),
+                        )
+                    ),
+                )
             ),
         ),
         (

@@ -98,7 +98,7 @@ list_expression = transform_success(
         literal("]"),
         name="list-expression",
     ),
-    transform=lambda s: ListExpression(s[1]),
+    transform=lambda s: ListExpression(elements=s[1]),
 )
 
 dict_expression = transform_success(
@@ -115,7 +115,7 @@ dict_expression = transform_success(
         literal("}"),
         name="dict-expression",
     ),
-    transform=lambda s: DictExpression(s[1]),
+    transform=lambda s: DictExpression(elements=s[1]),
 )
 
 simple_expression: Parser[Expression] = alternation(
@@ -137,7 +137,7 @@ class Slice:
     step: Expression
 
 
-_none_expr = ValueExpression(None)
+_none_expr = ValueExpression(value=None)
 
 _slice = transform_success(
     sequence(
@@ -290,19 +290,19 @@ def _transform_primary_expression(
                     kw_arguments=e.kwargs,
                 )
             case AttributeAccess():
-                expr = AttributeExpression(expr, e.identifier)
+                expr = AttributeExpression(object=expr, attribute=e.identifier)
             case Indexing():  # pragma: no branch
                 index = e.index
                 if isinstance(index, Expression):
-                    expr = IndexExpression(expr, index)
+                    expr = IndexExpression(expression=expr, index=index)
                 else:  # slice
                     args = (index.start, index.stop, index.step)
                     s = CallExpression(
-                        callee=ValueExpression(slice),
+                        callee=ValueExpression(value=slice),
                         arguments=args,
                         kw_arguments=(),
                     )
-                    expr = IndexExpression(expr, s)
+                    expr = IndexExpression(expression=expr, index=s)
 
     return ParseResult.make_success(result=expr, context=result.context)
 

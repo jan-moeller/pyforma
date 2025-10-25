@@ -16,7 +16,7 @@ from pyforma._parser import (
         ("foo {#bar#}baz", ("foo ", Comment("bar"), "baz"), ""),
         (
             "foo {#bar#}{{baz}} bam",
-            ("foo ", Comment("bar"), IdentifierExpression("baz"), " bam"),
+            ("foo ", Comment("bar"), IdentifierExpression(identifier="baz"), " bam"),
             "",
         ),
     ],

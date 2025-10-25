@@ -18,26 +18,28 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
     "source,expected,result_idx",
     [
         ("", ParseFailure(expected="expression"), 0),
-        ("foo bar", ParseSuccess(IdentifierExpression("foo")), 3),
-        ("'foo ' bar", ParseSuccess(ValueExpression("foo ")), 6),
-        ('"foo " bar', ParseSuccess(ValueExpression("foo ")), 6),
-        (r'"foo\nbar"', ParseSuccess(ValueExpression("foo\nbar")), 10),
-        ("42", ParseSuccess(ValueExpression(42)), 2),
-        ("1_000", ParseSuccess(ValueExpression(1000)), 5),
-        ("0xdeadbeef", ParseSuccess(ValueExpression(0xDEADBEEF)), 10),
-        ("0o1234", ParseSuccess(ValueExpression(0o1234)), 6),
-        ("0b0010", ParseSuccess(ValueExpression(0b0010)), 6),
-        ("1.", ParseSuccess(ValueExpression(1.0)), 2),
-        ("1.234", ParseSuccess(ValueExpression(1.234)), 5),
-        ("1_000.234_567", ParseSuccess(ValueExpression(1000.234567)), 13),
-        ("1e3", ParseSuccess(ValueExpression(1e3)), 3),
-        ("1e-3", ParseSuccess(ValueExpression(1e-3)), 4),
-        ("True", ParseSuccess(ValueExpression(True)), 4),
-        ("False", ParseSuccess(ValueExpression(False)), 5),
-        ("None", ParseSuccess(ValueExpression(None)), 4),
+        ("foo bar", ParseSuccess(IdentifierExpression(identifier="foo")), 3),
+        ("'foo ' bar", ParseSuccess(ValueExpression(value="foo ")), 6),
+        ('"foo " bar', ParseSuccess(ValueExpression(value="foo ")), 6),
+        (r'"foo\nbar"', ParseSuccess(ValueExpression(value="foo\nbar")), 10),
+        ("42", ParseSuccess(ValueExpression(value=42)), 2),
+        ("1_000", ParseSuccess(ValueExpression(value=1000)), 5),
+        ("0xdeadbeef", ParseSuccess(ValueExpression(value=0xDEADBEEF)), 10),
+        ("0o1234", ParseSuccess(ValueExpression(value=0o1234)), 6),
+        ("0b0010", ParseSuccess(ValueExpression(value=0b0010)), 6),
+        ("1.", ParseSuccess(ValueExpression(value=1.0)), 2),
+        ("1.234", ParseSuccess(ValueExpression(value=1.234)), 5),
+        ("1_000.234_567", ParseSuccess(ValueExpression(value=1000.234567)), 13),
+        ("1e3", ParseSuccess(ValueExpression(value=1e3)), 3),
+        ("1e-3", ParseSuccess(ValueExpression(value=1e-3)), 4),
+        ("True", ParseSuccess(ValueExpression(value=True)), 4),
+        ("False", ParseSuccess(ValueExpression(value=False)), 5),
+        ("None", ParseSuccess(ValueExpression(value=None)), 4),
         (
             "-a",
-            ParseSuccess(UnOpExpression(op="-", operand=IdentifierExpression("a"))),
+            ParseSuccess(
+                UnOpExpression(op="-", operand=IdentifierExpression(identifier="a"))
+            ),
             2,
         ),
         (
@@ -45,7 +47,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             ParseSuccess(
                 UnOpExpression(
                     op="-",
-                    operand=UnOpExpression(op="-", operand=IdentifierExpression("a")),
+                    operand=UnOpExpression(
+                        op="-", operand=IdentifierExpression(identifier="a")
+                    ),
                 )
             ),
             3,
@@ -55,8 +59,8 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             ParseSuccess(
                 BinOpExpression(
                     op="+",
-                    lhs=IdentifierExpression("a"),
-                    rhs=ValueExpression("b"),
+                    lhs=IdentifierExpression(identifier="a"),
+                    rhs=ValueExpression(value="b"),
                 )
             ),
             5,
@@ -68,13 +72,13 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
                     op="+",
                     lhs=BinOpExpression(
                         op="*",
-                        lhs=IdentifierExpression("a"),
-                        rhs=IdentifierExpression("b"),
+                        lhs=IdentifierExpression(identifier="a"),
+                        rhs=IdentifierExpression(identifier="b"),
                     ),
                     rhs=BinOpExpression(
                         op="/",
-                        lhs=IdentifierExpression("c"),
-                        rhs=IdentifierExpression("d"),
+                        lhs=IdentifierExpression(identifier="c"),
+                        rhs=IdentifierExpression(identifier="d"),
                     ),
                 )
             ),
@@ -87,14 +91,14 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
                     op="-",
                     lhs=BinOpExpression(
                         op="+",
-                        lhs=IdentifierExpression("a"),
+                        lhs=IdentifierExpression(identifier="a"),
                         rhs=BinOpExpression(
                             op="*",
-                            lhs=IdentifierExpression("b"),
-                            rhs=IdentifierExpression("c"),
+                            lhs=IdentifierExpression(identifier="b"),
+                            rhs=IdentifierExpression(identifier="c"),
                         ),
                     ),
-                    rhs=IdentifierExpression("d"),
+                    rhs=IdentifierExpression(identifier="d"),
                 )
             ),
             13,
@@ -106,43 +110,47 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
                     op="or",
                     lhs=BinOpExpression(
                         op="and",
-                        lhs=IdentifierExpression("a"),
-                        rhs=IdentifierExpression("b"),
+                        lhs=IdentifierExpression(identifier="a"),
+                        rhs=IdentifierExpression(identifier="b"),
                     ),
                     rhs=BinOpExpression(
                         op="in",
-                        lhs=IdentifierExpression("c"),
+                        lhs=IdentifierExpression(identifier="c"),
                         rhs=BinOpExpression(
                             op="|",
                             lhs=BinOpExpression(
                                 op="^",
                                 lhs=BinOpExpression(
                                     op="**",
-                                    lhs=IdentifierExpression("d"),
-                                    rhs=IdentifierExpression("e"),
+                                    lhs=IdentifierExpression(identifier="d"),
+                                    rhs=IdentifierExpression(identifier="e"),
                                 ),
                                 rhs=BinOpExpression(
                                     op="&",
-                                    lhs=IdentifierExpression("f"),
+                                    lhs=IdentifierExpression(identifier="f"),
                                     rhs=BinOpExpression(
                                         op="<<",
-                                        lhs=IdentifierExpression("g"),
+                                        lhs=IdentifierExpression(identifier="g"),
                                         rhs=BinOpExpression(
                                             op="+",
-                                            lhs=IdentifierExpression("h"),
+                                            lhs=IdentifierExpression(identifier="h"),
                                             rhs=BinOpExpression(
                                                 op="*",
                                                 lhs=UnOpExpression(
                                                     op="-",
-                                                    operand=IdentifierExpression("i"),
+                                                    operand=IdentifierExpression(
+                                                        identifier="i"
+                                                    ),
                                                 ),
-                                                rhs=IdentifierExpression("j"),
+                                                rhs=IdentifierExpression(
+                                                    identifier="j"
+                                                ),
                                             ),
                                         ),
                                     ),
                                 ),
                             ),
-                            rhs=IdentifierExpression("k"),
+                            rhs=IdentifierExpression(identifier="k"),
                         ),
                     ),
                 )
@@ -156,10 +164,10 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
                     op="*",
                     lhs=BinOpExpression(
                         op="+",
-                        lhs=IdentifierExpression("a"),
-                        rhs=IdentifierExpression("b"),
+                        lhs=IdentifierExpression(identifier="a"),
+                        rhs=IdentifierExpression(identifier="b"),
                     ),
-                    rhs=IdentifierExpression("c"),
+                    rhs=IdentifierExpression(identifier="c"),
                 )
             ),
             7,
@@ -195,7 +203,8 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a[0]",
             ParseSuccess(
                 IndexExpression(
-                    expression=IdentifierExpression("a"), index=ValueExpression(0)
+                    expression=IdentifierExpression(identifier="a"),
+                    index=ValueExpression(value=0),
                 )
             ),
             4,
@@ -205,18 +214,18 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             ParseSuccess(
                 IndexExpression(
                     expression=IndexExpression(
-                        expression=IdentifierExpression("a"),
+                        expression=IdentifierExpression(identifier="a"),
                         index=CallExpression(
-                            callee=ValueExpression(slice),
+                            callee=ValueExpression(value=slice),
                             arguments=(
-                                ValueExpression(None),
-                                ValueExpression(None),
-                                ValueExpression(None),
+                                ValueExpression(value=None),
+                                ValueExpression(value=None),
+                                ValueExpression(value=None),
                             ),
                             kw_arguments=(),
                         ),
                     ),
-                    index=IdentifierExpression("b"),
+                    index=IdentifierExpression(identifier="b"),
                 )
             ),
             7,
@@ -224,7 +233,11 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a()",
             ParseSuccess(
-                CallExpression(IdentifierExpression("a"), arguments=(), kw_arguments=())
+                CallExpression(
+                    callee=IdentifierExpression(identifier="a"),
+                    arguments=(),
+                    kw_arguments=(),
+                )
             ),
             3,
         ),
@@ -232,8 +245,8 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(1)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
-                    arguments=(ValueExpression(1),),
+                    callee=IdentifierExpression(identifier="a"),
+                    arguments=(ValueExpression(value=1),),
                     kw_arguments=(),
                 )
             ),
@@ -243,8 +256,8 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(1 ,)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
-                    arguments=(ValueExpression(1),),
+                    callee=IdentifierExpression(identifier="a"),
+                    arguments=(ValueExpression(value=1),),
                     kw_arguments=(),
                 )
             ),
@@ -254,8 +267,8 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(1, 2)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
-                    arguments=(ValueExpression(1), ValueExpression(2)),
+                    callee=IdentifierExpression(identifier="a"),
+                    arguments=(ValueExpression(value=1), ValueExpression(value=2)),
                     kw_arguments=(),
                 )
             ),
@@ -265,9 +278,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(1,b=2)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
-                    arguments=(ValueExpression(1),),
-                    kw_arguments=(("b", ValueExpression(2)),),
+                    callee=IdentifierExpression(identifier="a"),
+                    arguments=(ValueExpression(value=1),),
+                    kw_arguments=(("b", ValueExpression(value=2)),),
                 )
             ),
             8,
@@ -276,9 +289,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(b=1)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
+                    callee=IdentifierExpression(identifier="a"),
                     arguments=(),
-                    kw_arguments=(("b", ValueExpression(1)),),
+                    kw_arguments=(("b", ValueExpression(value=1)),),
                 )
             ),
             6,
@@ -287,9 +300,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(b=1,)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
+                    callee=IdentifierExpression(identifier="a"),
                     arguments=(),
-                    kw_arguments=(("b", ValueExpression(1)),),
+                    kw_arguments=(("b", ValueExpression(value=1)),),
                 )
             ),
             7,
@@ -298,35 +311,52 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a(b=1,c=2)",
             ParseSuccess(
                 CallExpression(
-                    IdentifierExpression("a"),
+                    callee=IdentifierExpression(identifier="a"),
                     arguments=(),
                     kw_arguments=(
-                        ("b", ValueExpression(1)),
-                        ("c", ValueExpression(2)),
+                        ("b", ValueExpression(value=1)),
+                        ("c", ValueExpression(value=2)),
                     ),
                 )
             ),
             10,
         ),
-        ("a.b", ParseSuccess(AttributeExpression(IdentifierExpression("a"), "b")), 3),
+        (
+            "a.b",
+            ParseSuccess(
+                AttributeExpression(
+                    object=IdentifierExpression(identifier="a"), attribute="b"
+                )
+            ),
+            3,
+        ),
         (
             "a.b.c",
             ParseSuccess(
                 AttributeExpression(
-                    AttributeExpression(IdentifierExpression("a"), "b"), "c"
+                    object=AttributeExpression(
+                        object=IdentifierExpression(identifier="a"), attribute="b"
+                    ),
+                    attribute="c",
                 )
             ),
             5,
         ),
-        ("[]", ParseSuccess(ListExpression(())), 2),
+        ("[]", ParseSuccess(ListExpression(elements=())), 2),
         (
             "[1, 2]",
-            ParseSuccess(ListExpression((ValueExpression(1), ValueExpression(2)))),
+            ParseSuccess(
+                ListExpression(
+                    elements=(ValueExpression(value=1), ValueExpression(value=2))
+                )
+            ),
             6,
         ),
         (
             "[a]",
-            ParseSuccess(ListExpression((IdentifierExpression("a"),))),
+            ParseSuccess(
+                ListExpression(elements=(IdentifierExpression(identifier="a"),))
+            ),
             3,
         ),
     ],
