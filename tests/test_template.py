@@ -119,7 +119,16 @@ def test_unresolved_identifiers(
         ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, True, None, nullcontext(("42y",))),
         ("{#foo#}{{b}}", {"b": 42}, True, None, nullcontext((Comment("foo"), "42"))),
         ("{#foo#}{{bar}}", {"bar": 42}, False, None, nullcontext(("42",))),
-        ("{#foo#}{{bar}}", {"bar": None}, False, None, pytest.raises(ValueError)),
+        (
+            "{#foo#}{{bar}}",
+            {"bar": None},
+            False,
+            None,
+            pytest.raises(
+                ValueError,
+                match=":1:10: No renderer for value of type <class 'NoneType'>",
+            ),
+        ),
         ("{{bar}}", {"bar": None}, False, [(type(None), str)], nullcontext(("None",))),
         ("{{bar}}", {"bar": MyString("foo")}, False, None, nullcontext(("foo",))),
         ("{{'bar'}}", {}, False, None, nullcontext(("bar",))),

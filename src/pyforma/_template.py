@@ -87,12 +87,13 @@ class Template:
         subbed = self._content.substitute(variables).content
         content: list[str | Comment | Expression | Environment] = []
 
-        def render(v: Any) -> str:
+        def render(expr: ValueExpression) -> str:
+            v = expr.value
             for t, r in [*renderers, *Template._default_renderers]:
                 if isinstance(v, t):
                     return r(v)
 
-            raise ValueError(f"No renderer for value of type {type(v)}")
+            raise ValueError(f"{expr.origin}: No renderer for value of type {type(v)}")
 
         def append_str(s: str):
             if len(content) > 0 and isinstance(content[-1], str):
@@ -110,7 +111,7 @@ class Template:
                             case Template():
                                 combine_results(elem.value._content.content)
                             case _:
-                                append_str(render(elem.value))
+                                append_str(render(elem))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
                         combine_results(elem.content)
                     case Comment():
