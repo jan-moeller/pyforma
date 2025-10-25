@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from functools import cache
 from typing import LiteralString, cast
 
-from pyforma._ast import (
+from pyforma._ast.expression import (
+    AttributeExpression,
+    ListExpression,
+    DictExpression,
     Expression,
     BinOpExpression,
     UnOpExpression,
@@ -10,7 +13,6 @@ from pyforma._ast import (
     IndexExpression,
     ValueExpression,
 )
-from pyforma._ast.expression import AttributeExpression, ListExpression, DictExpression
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
 from .non_empty import non_empty
@@ -23,6 +25,7 @@ from .whitespace import whitespace
 from .sequence import sequence
 from .literal import literal
 from .parse_context import ParseContext
+from pyforma._ast.origin import Origin
 from .parse_result import ParseResult
 from .parser import Parser, parser
 from .alternation import alternation
@@ -98,7 +101,7 @@ list_expression = transform_success(
         literal("]"),
         name="list-expression",
     ),
-    transform=lambda s: ListExpression(elements=s[1]),
+    transform=lambda s, c: ListExpression(origin=c.origin(), elements=s[1]),
 )
 
 dict_expression = transform_success(
@@ -115,7 +118,7 @@ dict_expression = transform_success(
         literal("}"),
         name="dict-expression",
     ),
-    transform=lambda s: DictExpression(elements=s[1]),
+    transform=lambda s, c: DictExpression(origin=c.origin(), elements=s[1]),
 )
 
 simple_expression: Parser[Expression] = alternation(
@@ -137,7 +140,10 @@ class Slice:
     step: Expression
 
 
-_none_expr = ValueExpression(value=None)
+_none_expr = ValueExpression(
+    origin=Origin(position=(0, 0), source_id=""),
+    value=None,
+)
 
 _slice = transform_success(
     sequence(
@@ -270,6 +276,7 @@ def _transform_primary_expression(
     result: ParseResult[
         tuple[Expression, tuple[Indexing | CallArguments | AttributeAccess, ...]]
     ],
+    context: ParseContext,
 ) -> ParseResult[Expression]:
     """Transforms the basic parse result into an expression."""
 
@@ -285,24 +292,38 @@ def _transform_primary_expression(
         match e:
             case CallArguments():
                 expr = CallExpression(
+                    origin=context.origin(),
                     callee=expr,
                     arguments=e.args,
                     kw_arguments=e.kwargs,
                 )
             case AttributeAccess():
-                expr = AttributeExpression(object=expr, attribute=e.identifier)
+                expr = AttributeExpression(
+                    origin=context.origin(),
+                    object=expr,
+                    attribute=e.identifier,
+                )
             case Indexing():  # pragma: no branch
                 index = e.index
                 if isinstance(index, Expression):
-                    expr = IndexExpression(expression=expr, index=index)
+                    expr = IndexExpression(
+                        origin=context.origin(),
+                        expression=expr,
+                        index=index,
+                    )
                 else:  # slice
                     args = (index.start, index.stop, index.step)
                     s = CallExpression(
-                        callee=ValueExpression(value=slice),
+                        origin=context.origin(),
+                        callee=ValueExpression(origin=context.origin(), value=slice),
                         arguments=args,
                         kw_arguments=(),
                     )
-                    expr = IndexExpression(expression=expr, index=s)
+                    expr = IndexExpression(
+                        origin=context.origin(),
+                        expression=expr,
+                        index=s,
+                    )
 
     return ParseResult.make_success(result=expr, context=result.context)
 
@@ -349,7 +370,9 @@ def _unop_expression(
         if isinstance(r.success.result, tuple):
             return ParseResult.make_success(
                 result=UnOpExpression(
-                    op=r.success.result[0], operand=r.success.result[2]
+                    origin=context.origin(),
+                    op=r.success.result[0],
+                    operand=r.success.result[2],
                 ),
                 context=r.context,
             )
@@ -397,7 +420,7 @@ def _binop_expression(
         for elem in r.success.result[1]:
             op = elem[0]
             rhs = elem[1]
-            lhs = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
+            lhs = BinOpExpression(origin=context.origin(), op=op, lhs=lhs, rhs=rhs)
         return ParseResult.make_success(result=lhs, context=r.context)
 
     return parse_binop_expression
@@ -454,12 +477,17 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
             op = cast(BinOpExpression.OpType, operators[i])
             lhs = expressions[i]
             rhs = expressions[i + 1]
-            expr = BinOpExpression(op=op, lhs=lhs, rhs=rhs)
+            expr = BinOpExpression(origin=context.origin(), op=op, lhs=lhs, rhs=rhs)
             conjunction.append(expr)
 
         result_expr = conjunction[0]
         for expr in conjunction[1:]:
-            result_expr = BinOpExpression(op="and", lhs=result_expr, rhs=expr)
+            result_expr = BinOpExpression(
+                origin=context.origin(),
+                op="and",
+                lhs=result_expr,
+                rhs=expr,
+            )
 
         return ParseResult.make_success(result=result_expr, context=r.context)
 

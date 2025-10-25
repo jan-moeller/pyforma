@@ -9,6 +9,7 @@ from pyforma._parser import (
     ParseSuccess,
     ParseResult,
 )
+from pyforma._ast.origin import Origin
 
 
 @pytest.mark.parametrize(
@@ -31,10 +32,40 @@ from pyforma._parser import (
             ),
             0,
         ),
-        ("{{foo}}", ParseSuccess(IdentifierExpression(identifier="foo")), 7),
-        ("{{ foo }}", ParseSuccess(IdentifierExpression(identifier="foo")), 9),
-        ("{{ foo }}bar", ParseSuccess(IdentifierExpression(identifier="foo")), 9),
-        ("{{'foo'}}bar", ParseSuccess(ValueExpression(value="foo")), 9),
+        (
+            "{{foo}}",
+            ParseSuccess(
+                result=IdentifierExpression(
+                    origin=Origin(position=(1, 3)), identifier="foo"
+                )
+            ),
+            7,
+        ),
+        (
+            "{{ foo }}",
+            ParseSuccess(
+                result=IdentifierExpression(
+                    origin=Origin(position=(1, 4)), identifier="foo"
+                )
+            ),
+            9,
+        ),
+        (
+            "{{ foo }}bar",
+            ParseSuccess(
+                result=IdentifierExpression(
+                    origin=Origin(position=(1, 4)), identifier="foo"
+                )
+            ),
+            9,
+        ),
+        (
+            "{{'foo'}}bar",
+            ParseSuccess(
+                result=ValueExpression(origin=Origin(position=(1, 3)), value="foo")
+            ),
+            9,
+        ),
         (
             "{{ foo",
             ParseFailure(

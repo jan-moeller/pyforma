@@ -10,35 +10,60 @@ from pyforma._ast.expression import (
     AttributeExpression,
 )
 from pyforma._parser.parse_context import ParseContext
-from pyforma._parser.expression import expression
+from pyforma._ast.origin import Origin
+from pyforma._parser.expression import expression, _none_expr  # pyright: ignore[reportPrivateUsage]
 from pyforma._parser.parse_result import ParseFailure, ParseSuccess
+
+_origin = Origin(position=(1, 1))
 
 
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
         ("", ParseFailure(expected="expression"), 0),
-        ("foo bar", ParseSuccess(IdentifierExpression(identifier="foo")), 3),
-        ("'foo ' bar", ParseSuccess(ValueExpression(value="foo ")), 6),
-        ('"foo " bar', ParseSuccess(ValueExpression(value="foo ")), 6),
-        (r'"foo\nbar"', ParseSuccess(ValueExpression(value="foo\nbar")), 10),
-        ("42", ParseSuccess(ValueExpression(value=42)), 2),
-        ("1_000", ParseSuccess(ValueExpression(value=1000)), 5),
-        ("0xdeadbeef", ParseSuccess(ValueExpression(value=0xDEADBEEF)), 10),
-        ("0o1234", ParseSuccess(ValueExpression(value=0o1234)), 6),
-        ("0b0010", ParseSuccess(ValueExpression(value=0b0010)), 6),
-        ("1.", ParseSuccess(ValueExpression(value=1.0)), 2),
-        ("1.234", ParseSuccess(ValueExpression(value=1.234)), 5),
-        ("1_000.234_567", ParseSuccess(ValueExpression(value=1000.234567)), 13),
-        ("1e3", ParseSuccess(ValueExpression(value=1e3)), 3),
-        ("1e-3", ParseSuccess(ValueExpression(value=1e-3)), 4),
-        ("True", ParseSuccess(ValueExpression(value=True)), 4),
-        ("False", ParseSuccess(ValueExpression(value=False)), 5),
-        ("None", ParseSuccess(ValueExpression(value=None)), 4),
+        (
+            "foo bar",
+            ParseSuccess(IdentifierExpression(origin=_origin, identifier="foo")),
+            3,
+        ),
+        ("'foo ' bar", ParseSuccess(ValueExpression(origin=_origin, value="foo ")), 6),
+        ('"foo " bar', ParseSuccess(ValueExpression(origin=_origin, value="foo ")), 6),
+        (
+            r'"foo\nbar"',
+            ParseSuccess(ValueExpression(origin=_origin, value="foo\nbar")),
+            10,
+        ),
+        ("42", ParseSuccess(ValueExpression(origin=_origin, value=42)), 2),
+        ("1_000", ParseSuccess(ValueExpression(origin=_origin, value=1000)), 5),
+        (
+            "0xdeadbeef",
+            ParseSuccess(ValueExpression(origin=_origin, value=0xDEADBEEF)),
+            10,
+        ),
+        ("0o1234", ParseSuccess(ValueExpression(origin=_origin, value=0o1234)), 6),
+        ("0b0010", ParseSuccess(ValueExpression(origin=_origin, value=0b0010)), 6),
+        ("1.", ParseSuccess(ValueExpression(origin=_origin, value=1.0)), 2),
+        ("1.234", ParseSuccess(ValueExpression(origin=_origin, value=1.234)), 5),
+        (
+            "1_000.234_567",
+            ParseSuccess(ValueExpression(origin=_origin, value=1000.234567)),
+            13,
+        ),
+        ("1e3", ParseSuccess(ValueExpression(origin=_origin, value=1e3)), 3),
+        ("1e-3", ParseSuccess(ValueExpression(origin=_origin, value=1e-3)), 4),
+        ("True", ParseSuccess(ValueExpression(origin=_origin, value=True)), 4),
+        ("False", ParseSuccess(ValueExpression(origin=_origin, value=False)), 5),
+        ("None", ParseSuccess(ValueExpression(origin=_origin, value=None)), 4),
         (
             "-a",
             ParseSuccess(
-                UnOpExpression(op="-", operand=IdentifierExpression(identifier="a"))
+                UnOpExpression(
+                    origin=_origin,
+                    op="-",
+                    operand=IdentifierExpression(
+                        origin=Origin(position=(1, 2)), identifier="a"
+                    ),
+                )
             ),
             2,
         ),
@@ -46,9 +71,15 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "--a",
             ParseSuccess(
                 UnOpExpression(
+                    origin=_origin,
                     op="-",
                     operand=UnOpExpression(
-                        op="-", operand=IdentifierExpression(identifier="a")
+                        origin=Origin(position=(1, 2)),
+                        op="-",
+                        operand=IdentifierExpression(
+                            origin=Origin(position=(1, 3)),
+                            identifier="a",
+                        ),
                     ),
                 )
             ),
@@ -58,9 +89,10 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             'a+"b"',
             ParseSuccess(
                 BinOpExpression(
+                    origin=_origin,
                     op="+",
-                    lhs=IdentifierExpression(identifier="a"),
-                    rhs=ValueExpression(value="b"),
+                    lhs=IdentifierExpression(origin=_origin, identifier="a"),
+                    rhs=ValueExpression(origin=Origin(position=(1, 3)), value="b"),
                 )
             ),
             5,
@@ -69,16 +101,25 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a * b + c / d",
             ParseSuccess(
                 BinOpExpression(
+                    origin=_origin,
                     op="+",
                     lhs=BinOpExpression(
+                        origin=_origin,
                         op="*",
-                        lhs=IdentifierExpression(identifier="a"),
-                        rhs=IdentifierExpression(identifier="b"),
+                        lhs=IdentifierExpression(origin=_origin, identifier="a"),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 5)), identifier="b"
+                        ),
                     ),
                     rhs=BinOpExpression(
+                        origin=Origin(position=(1, 9)),
                         op="/",
-                        lhs=IdentifierExpression(identifier="c"),
-                        rhs=IdentifierExpression(identifier="d"),
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 9)), identifier="c"
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 13)), identifier="d"
+                        ),
                     ),
                 )
             ),
@@ -88,17 +129,29 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a + b * c - d",
             ParseSuccess(
                 BinOpExpression(
+                    origin=_origin,
                     op="-",
                     lhs=BinOpExpression(
+                        origin=_origin,
                         op="+",
-                        lhs=IdentifierExpression(identifier="a"),
+                        lhs=IdentifierExpression(origin=_origin, identifier="a"),
                         rhs=BinOpExpression(
+                            origin=Origin(position=(1, 5)),
                             op="*",
-                            lhs=IdentifierExpression(identifier="b"),
-                            rhs=IdentifierExpression(identifier="c"),
+                            lhs=IdentifierExpression(
+                                origin=Origin(position=(1, 5)),
+                                identifier="b",
+                            ),
+                            rhs=IdentifierExpression(
+                                origin=Origin(position=(1, 9)),
+                                identifier="c",
+                            ),
                         ),
                     ),
-                    rhs=IdentifierExpression(identifier="d"),
+                    rhs=IdentifierExpression(
+                        origin=Origin(position=(1, 13)),
+                        identifier="d",
+                    ),
                 )
             ),
             13,
@@ -106,51 +159,90 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a and b or c in d ** e ^ f & g << h + -i * j | k",
             ParseSuccess(
-                BinOpExpression(
+                result=BinOpExpression(
+                    origin=_origin,
                     op="or",
                     lhs=BinOpExpression(
+                        origin=_origin,
                         op="and",
-                        lhs=IdentifierExpression(identifier="a"),
-                        rhs=IdentifierExpression(identifier="b"),
+                        lhs=IdentifierExpression(origin=_origin, identifier="a"),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 7)), identifier="b"
+                        ),
                     ),
                     rhs=BinOpExpression(
+                        origin=Origin(position=(1, 12)),
                         op="in",
-                        lhs=IdentifierExpression(identifier="c"),
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 12)),
+                            identifier="c",
+                        ),
                         rhs=BinOpExpression(
+                            origin=Origin(position=(1, 17)),
                             op="|",
                             lhs=BinOpExpression(
+                                origin=Origin(position=(1, 17)),
                                 op="^",
                                 lhs=BinOpExpression(
+                                    origin=Origin(position=(1, 17)),
                                     op="**",
-                                    lhs=IdentifierExpression(identifier="d"),
-                                    rhs=IdentifierExpression(identifier="e"),
+                                    lhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 17)),
+                                        identifier="d",
+                                    ),
+                                    rhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 22)),
+                                        identifier="e",
+                                    ),
                                 ),
                                 rhs=BinOpExpression(
+                                    origin=Origin(position=(1, 26)),
                                     op="&",
-                                    lhs=IdentifierExpression(identifier="f"),
+                                    lhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 26)),
+                                        identifier="f",
+                                    ),
                                     rhs=BinOpExpression(
+                                        origin=Origin(position=(1, 30)),
                                         op="<<",
-                                        lhs=IdentifierExpression(identifier="g"),
+                                        lhs=IdentifierExpression(
+                                            origin=Origin(position=(1, 30)),
+                                            identifier="g",
+                                        ),
                                         rhs=BinOpExpression(
+                                            origin=Origin(position=(1, 35)),
                                             op="+",
-                                            lhs=IdentifierExpression(identifier="h"),
+                                            lhs=IdentifierExpression(
+                                                origin=Origin(position=(1, 35)),
+                                                identifier="h",
+                                            ),
                                             rhs=BinOpExpression(
+                                                origin=Origin(position=(1, 39)),
                                                 op="*",
                                                 lhs=UnOpExpression(
+                                                    origin=Origin(position=(1, 39)),
                                                     op="-",
                                                     operand=IdentifierExpression(
-                                                        identifier="i"
+                                                        origin=Origin(
+                                                            position=(1, 40),
+                                                            source_id="",
+                                                        ),
+                                                        identifier="i",
                                                     ),
                                                 ),
                                                 rhs=IdentifierExpression(
-                                                    identifier="j"
+                                                    origin=Origin(position=(1, 44)),
+                                                    identifier="j",
                                                 ),
                                             ),
                                         ),
                                     ),
                                 ),
                             ),
-                            rhs=IdentifierExpression(identifier="k"),
+                            rhs=IdentifierExpression(
+                                origin=Origin(position=(1, 48)),
+                                identifier="k",
+                            ),
                         ),
                     ),
                 )
@@ -160,14 +252,22 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "(a+b)*c",
             ParseSuccess(
-                BinOpExpression(
+                result=BinOpExpression(
+                    origin=_origin,
                     op="*",
                     lhs=BinOpExpression(
+                        origin=Origin(position=(1, 2)),
                         op="+",
-                        lhs=IdentifierExpression(identifier="a"),
-                        rhs=IdentifierExpression(identifier="b"),
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 2)), identifier="a"
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 4)), identifier="b"
+                        ),
                     ),
-                    rhs=IdentifierExpression(identifier="c"),
+                    rhs=IdentifierExpression(
+                        origin=Origin(position=(1, 7)), identifier="c"
+                    ),
                 )
             ),
             7,
@@ -175,25 +275,46 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a<b<=c==d",
             ParseSuccess(
-                BinOpExpression(
+                result=BinOpExpression(
+                    origin=_origin,
                     op="and",
                     lhs=BinOpExpression(
+                        origin=_origin,
                         op="and",
                         lhs=BinOpExpression(
+                            origin=_origin,
                             op="<",
-                            lhs=IdentifierExpression(identifier="a"),
-                            rhs=IdentifierExpression(identifier="b"),
+                            lhs=IdentifierExpression(
+                                origin=_origin,
+                                identifier="a",
+                            ),
+                            rhs=IdentifierExpression(
+                                origin=Origin(position=(1, 3)),
+                                identifier="b",
+                            ),
                         ),
                         rhs=BinOpExpression(
+                            origin=_origin,
                             op="<=",
-                            lhs=IdentifierExpression(identifier="b"),
-                            rhs=IdentifierExpression(identifier="c"),
+                            lhs=IdentifierExpression(
+                                origin=Origin(position=(1, 3)),
+                                identifier="b",
+                            ),
+                            rhs=IdentifierExpression(
+                                origin=Origin(position=(1, 6)),
+                                identifier="c",
+                            ),
                         ),
                     ),
                     rhs=BinOpExpression(
+                        origin=_origin,
                         op="==",
-                        lhs=IdentifierExpression(identifier="c"),
-                        rhs=IdentifierExpression(identifier="d"),
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 6)), identifier="c"
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 9)), identifier="d"
+                        ),
                     ),
                 )
             ),
@@ -202,9 +323,10 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a[0]",
             ParseSuccess(
-                IndexExpression(
-                    expression=IdentifierExpression(identifier="a"),
-                    index=ValueExpression(value=0),
+                result=IndexExpression(
+                    origin=_origin,
+                    expression=IdentifierExpression(origin=_origin, identifier="a"),
+                    index=ValueExpression(origin=Origin(position=(1, 3)), value=0),
                 )
             ),
             4,
@@ -212,20 +334,28 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a[:][b]",
             ParseSuccess(
-                IndexExpression(
+                result=IndexExpression(
+                    origin=_origin,
                     expression=IndexExpression(
-                        expression=IdentifierExpression(identifier="a"),
+                        origin=_origin,
+                        expression=IdentifierExpression(origin=_origin, identifier="a"),
                         index=CallExpression(
-                            callee=ValueExpression(value=slice),
+                            origin=_origin,
+                            callee=ValueExpression(
+                                origin=_origin,
+                                value=slice,
+                            ),
                             arguments=(
-                                ValueExpression(value=None),
-                                ValueExpression(value=None),
-                                ValueExpression(value=None),
+                                _none_expr,
+                                _none_expr,
+                                _none_expr,
                             ),
                             kw_arguments=(),
                         ),
                     ),
-                    index=IdentifierExpression(identifier="b"),
+                    index=IdentifierExpression(
+                        origin=Origin(position=(1, 6)), identifier="b"
+                    ),
                 )
             ),
             7,
@@ -233,8 +363,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a()",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
                     arguments=(),
                     kw_arguments=(),
                 )
@@ -244,9 +375,12 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(1)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
-                    arguments=(ValueExpression(value=1),),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
+                    arguments=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value=1),
+                    ),
                     kw_arguments=(),
                 )
             ),
@@ -255,9 +389,12 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(1 ,)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
-                    arguments=(ValueExpression(value=1),),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
+                    arguments=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value=1),
+                    ),
                     kw_arguments=(),
                 )
             ),
@@ -266,9 +403,13 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(1, 2)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
-                    arguments=(ValueExpression(value=1), ValueExpression(value=2)),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
+                    arguments=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value=1),
+                        ValueExpression(origin=Origin(position=(1, 6)), value=2),
+                    ),
                     kw_arguments=(),
                 )
             ),
@@ -277,10 +418,18 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(1,b=2)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
-                    arguments=(ValueExpression(value=1),),
-                    kw_arguments=(("b", ValueExpression(value=2)),),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
+                    arguments=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value=1),
+                    ),
+                    kw_arguments=(
+                        (
+                            "b",
+                            ValueExpression(origin=Origin(position=(1, 7)), value=2),
+                        ),
+                    ),
                 )
             ),
             8,
@@ -288,10 +437,16 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(b=1)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
                     arguments=(),
-                    kw_arguments=(("b", ValueExpression(value=1)),),
+                    kw_arguments=(
+                        (
+                            "b",
+                            ValueExpression(origin=Origin(position=(1, 5)), value=1),
+                        ),
+                    ),
                 )
             ),
             6,
@@ -299,10 +454,16 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(b=1,)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
                     arguments=(),
-                    kw_arguments=(("b", ValueExpression(value=1)),),
+                    kw_arguments=(
+                        (
+                            "b",
+                            ValueExpression(origin=Origin(position=(1, 5)), value=1),
+                        ),
+                    ),
                 )
             ),
             7,
@@ -310,12 +471,19 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "a(b=1,c=2)",
             ParseSuccess(
-                CallExpression(
-                    callee=IdentifierExpression(identifier="a"),
+                result=CallExpression(
+                    origin=_origin,
+                    callee=IdentifierExpression(origin=_origin, identifier="a"),
                     arguments=(),
                     kw_arguments=(
-                        ("b", ValueExpression(value=1)),
-                        ("c", ValueExpression(value=2)),
+                        (
+                            "b",
+                            ValueExpression(origin=Origin(position=(1, 5)), value=1),
+                        ),
+                        (
+                            "c",
+                            ValueExpression(origin=Origin(position=(1, 9)), value=2),
+                        ),
                     ),
                 )
             ),
@@ -325,7 +493,9 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a.b",
             ParseSuccess(
                 AttributeExpression(
-                    object=IdentifierExpression(identifier="a"), attribute="b"
+                    origin=_origin,
+                    object=IdentifierExpression(origin=_origin, identifier="a"),
+                    attribute="b",
                 )
             ),
             3,
@@ -334,20 +504,27 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
             "a.b.c",
             ParseSuccess(
                 AttributeExpression(
+                    origin=_origin,
                     object=AttributeExpression(
-                        object=IdentifierExpression(identifier="a"), attribute="b"
+                        origin=_origin,
+                        object=IdentifierExpression(origin=_origin, identifier="a"),
+                        attribute="b",
                     ),
                     attribute="c",
                 )
             ),
             5,
         ),
-        ("[]", ParseSuccess(ListExpression(elements=())), 2),
+        ("[]", ParseSuccess(ListExpression(origin=_origin, elements=())), 2),
         (
             "[1, 2]",
             ParseSuccess(
-                ListExpression(
-                    elements=(ValueExpression(value=1), ValueExpression(value=2))
+                result=ListExpression(
+                    origin=_origin,
+                    elements=(
+                        ValueExpression(origin=Origin(position=(1, 2)), value=1),
+                        ValueExpression(origin=Origin(position=(1, 5)), value=2),
+                    ),
                 )
             ),
             6,
@@ -355,7 +532,14 @@ from pyforma._parser.parse_result import ParseFailure, ParseSuccess
         (
             "[a]",
             ParseSuccess(
-                ListExpression(elements=(IdentifierExpression(identifier="a"),))
+                result=ListExpression(
+                    origin=_origin,
+                    elements=(
+                        IdentifierExpression(
+                            origin=Origin(position=(1, 2)), identifier="a"
+                        ),
+                    ),
+                )
             ),
             3,
         ),

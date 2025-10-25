@@ -30,5 +30,8 @@ floating_point_literal_expression = transform_consumed(
         ),
         name="float literal",
     ),
-    transform=lambda s: ValueExpression(value=ast.literal_eval(s)),
+    transform=lambda s, c: ValueExpression(
+        origin=c.origin(),
+        value=ast.literal_eval(s),
+    ),
 )

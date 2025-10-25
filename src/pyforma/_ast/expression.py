@@ -2,9 +2,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import override, Any, Literal, cast
 
+from pyforma._ast.origin import Origin
 
+
+@dataclass(frozen=True, kw_only=True)
 class Expression(ABC):
     """Expression base class"""
+
+    origin: Origin
 
     @abstractmethod
     def identifiers(self) -> set[str]: ...
@@ -41,7 +46,7 @@ class IdentifierExpression(Expression):
     @override
     def substitute(self, variables: dict[str, Any]) -> Expression:
         if self.identifier in variables:
-            return ValueExpression(value=variables[self.identifier])
+            return ValueExpression(origin=self.origin, value=variables[self.identifier])
         return self
 
 
@@ -62,15 +67,15 @@ class UnOpExpression(Expression):
         if isinstance(operand, ValueExpression):
             match self.op:
                 case "+":
-                    return ValueExpression(value=+operand.value)
+                    return ValueExpression(origin=self.origin, value=+operand.value)
                 case "-":
-                    return ValueExpression(value=-operand.value)
+                    return ValueExpression(origin=self.origin, value=-operand.value)
                 case "~":
-                    return ValueExpression(value=~operand.value)
+                    return ValueExpression(origin=self.origin, value=~operand.value)
                 case "not":  # pragma: no branch
-                    return ValueExpression(value=not operand.value)
+                    return ValueExpression(origin=self.origin, value=not operand.value)
 
-        return UnOpExpression(op=self.op, operand=operand)
+        return UnOpExpression(origin=self.origin, op=self.op, operand=operand)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -118,53 +123,99 @@ class BinOpExpression(Expression):
         if isinstance(lhs, ValueExpression) and isinstance(rhs, ValueExpression):
             match self.op:
                 case "**":
-                    return ValueExpression(value=lhs.value**rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value**rhs.value
+                    )
                 case "+":
-                    return ValueExpression(value=lhs.value + rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value + rhs.value
+                    )
                 case "-":
-                    return ValueExpression(value=lhs.value - rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value - rhs.value
+                    )
                 case "*":
-                    return ValueExpression(value=lhs.value * rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value * rhs.value
+                    )
                 case "/":
-                    return ValueExpression(value=lhs.value / rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value / rhs.value
+                    )
                 case "//":
-                    return ValueExpression(value=lhs.value // rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value // rhs.value
+                    )
                 case "%":
-                    return ValueExpression(value=lhs.value % rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value % rhs.value
+                    )
                 case "@":
-                    return ValueExpression(value=lhs.value @ rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value @ rhs.value
+                    )
                 case "<<":
-                    return ValueExpression(value=lhs.value << rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value << rhs.value
+                    )
                 case ">>":
-                    return ValueExpression(value=lhs.value >> rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value >> rhs.value
+                    )
                 case "&":
-                    return ValueExpression(value=lhs.value & rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value & rhs.value
+                    )
                 case "^":
-                    return ValueExpression(value=lhs.value ^ rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value ^ rhs.value
+                    )
                 case "|":
-                    return ValueExpression(value=lhs.value | rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value | rhs.value
+                    )
                 case "==":
-                    return ValueExpression(value=lhs.value == rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value == rhs.value
+                    )
                 case "!=":
-                    return ValueExpression(value=lhs.value != rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value != rhs.value
+                    )
                 case "<=":
-                    return ValueExpression(value=lhs.value <= rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value <= rhs.value
+                    )
                 case "<":
-                    return ValueExpression(value=lhs.value < rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value < rhs.value
+                    )
                 case ">=":
-                    return ValueExpression(value=lhs.value >= rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value >= rhs.value
+                    )
                 case ">":
-                    return ValueExpression(value=lhs.value > rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value > rhs.value
+                    )
                 case "in":
-                    return ValueExpression(value=lhs.value in rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value in rhs.value
+                    )
                 case "not in":
-                    return ValueExpression(value=lhs.value not in rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value not in rhs.value
+                    )
                 case "and":
-                    return ValueExpression(value=lhs.value and rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value and rhs.value
+                    )
                 case "or":  # pragma: no branch
-                    return ValueExpression(value=lhs.value or rhs.value)
+                    return ValueExpression(
+                        origin=self.origin, value=lhs.value or rhs.value
+                    )
         else:
-            return BinOpExpression(op=self.op, lhs=lhs, rhs=rhs)
+            return BinOpExpression(origin=self.origin, op=self.op, lhs=lhs, rhs=rhs)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -185,8 +236,10 @@ class IndexExpression(Expression):
         if isinstance(expression, ValueExpression) and isinstance(
             index, ValueExpression
         ):
-            return ValueExpression(value=expression.value[index.value])
-        return IndexExpression(expression=expression, index=index)
+            return ValueExpression(
+                origin=self.origin, value=expression.value[index.value]
+            )
+        return IndexExpression(origin=self.origin, expression=expression, index=index)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -218,9 +271,15 @@ class CallExpression(Expression):
             kwargs = {
                 iden: cast(ValueExpression, arg).value for iden, arg in kw_arguments
             }
-            return ValueExpression(value=callee.value(*args, **kwargs))
+            return ValueExpression(
+                origin=self.origin,
+                value=callee.value(*args, **kwargs),
+            )
         return CallExpression(
-            callee=callee, arguments=arguments, kw_arguments=kw_arguments
+            origin=self.origin,
+            callee=callee,
+            arguments=arguments,
+            kw_arguments=kw_arguments,
         )
 
 
@@ -241,9 +300,13 @@ class AttributeExpression(Expression):
         attribute = self.attribute
 
         if isinstance(object, ValueExpression):
-            return ValueExpression(value=getattr(object.value, attribute))
+            return ValueExpression(
+                origin=self.origin, value=getattr(object.value, attribute)
+            )
 
-        return AttributeExpression(object=object, attribute=attribute)
+        return AttributeExpression(
+            origin=self.origin, object=object, attribute=attribute
+        )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -262,10 +325,11 @@ class ListExpression(Expression):
 
         if all(isinstance(e, ValueExpression) for e in _elements):
             return ValueExpression(
-                value=[cast(ValueExpression, e).value for e in _elements]
+                origin=self.origin,
+                value=[cast(ValueExpression, e).value for e in _elements],
             )
 
-        return ListExpression(elements=_elements)
+        return ListExpression(origin=self.origin, elements=_elements)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -292,10 +356,11 @@ class DictExpression(Expression):
             for k, v in _elements
         ):
             return ValueExpression(
+                origin=self.origin,
                 value={
                     cast(ValueExpression, k).value: cast(ValueExpression, v).value
                     for k, v in _elements
-                }
+                },
             )
 
-        return DictExpression(elements=_elements)
+        return DictExpression(origin=self.origin, elements=_elements)

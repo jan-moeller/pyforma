@@ -2,6 +2,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import override
 
+from pyforma._ast.origin import Origin
+
 
 def _line_and_column(
     source: str,
@@ -116,3 +118,7 @@ class ParseContext:
     def line_and_column(self) -> tuple[int, int]:
         """Returns the 1-based line and column of the current index in the input string"""
         return self.position
+
+    def origin(self) -> Origin:
+        """Returns the origin of the current index in the input string"""
+        return Origin(position=self.position, source_id=self.source_id)

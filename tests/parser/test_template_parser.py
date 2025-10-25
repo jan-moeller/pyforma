@@ -6,6 +6,7 @@ from pyforma._parser import (
     template,
     TemplateSyntaxConfig,
 )
+from pyforma._ast.origin import Origin
 
 
 @pytest.mark.parametrize(
@@ -16,7 +17,12 @@ from pyforma._parser import (
         ("foo {#bar#}baz", ("foo ", Comment("bar"), "baz"), ""),
         (
             "foo {#bar#}{{baz}} bam",
-            ("foo ", Comment("bar"), IdentifierExpression(identifier="baz"), " bam"),
+            (
+                "foo ",
+                Comment(text="bar"),
+                IdentifierExpression(origin=Origin(position=(1, 14)), identifier="baz"),
+                " bam",
+            ),
             "",
         ),
     ],

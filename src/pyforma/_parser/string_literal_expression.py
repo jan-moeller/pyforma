@@ -17,5 +17,8 @@ _string = alternation(
 
 string_literal_expression = transform_consumed(
     _string,
-    transform=lambda s: ValueExpression(value=ast.literal_eval(s)),
+    transform=lambda s, c: ValueExpression(
+        origin=c.origin(),
+        value=ast.literal_eval(s),
+    ),
 )
