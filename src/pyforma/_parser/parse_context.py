@@ -3,18 +3,42 @@ from dataclasses import dataclass
 from typing import override
 
 
+def _line_and_column(
+    source: str,
+    index: int,
+    base_index: int = 0,
+    base_pos: tuple[int, int] = (1, 1),
+) -> tuple[int, int]:
+    """Computes the 1-based line and column of the current index in the input string"""
+    line = base_pos[0]
+    column = base_pos[1]
+    for char in source[base_index:index]:
+        if char == "\n":
+            line += 1
+            column = 1
+        else:
+            column += 1
+    return line, column
+
+
 @dataclass(frozen=True)
 class ParseContext:
     """Maintains the input for parsing"""
 
     source: str  # Complete input string
     index: int = 0  # Index of the next character to consume
+    position: tuple[int, int] = (0, 0)  # 1-based; default means auto-compute.
 
     def __post_init__(self):
         """Makes sure that the index is valid"""
         if self.index < 0 or self.index > len(self.source):
             raise ValueError(
                 f"index {self.index} out of range 0 ... {len(self.source)}"
+            )
+
+        if self.position[0] <= 0 or self.position[1] <= 0:
+            object.__setattr__(
+                self, "position", _line_and_column(self.source, self.index)
             )
 
     def __getitem__(self, item: int | slice) -> str:
@@ -67,7 +91,18 @@ class ParseContext:
             raise ValueError(
                 f"remaining input too short: requested {count} but is {self.__len__()}"
             )
-        return ParseContext(self.source, self.index + count)
+        index = index = self.index + count
+        pos = _line_and_column(
+            self.source,
+            index,
+            base_index=self.index,
+            base_pos=self.position,
+        )
+        return ParseContext(
+            self.source,
+            index=index,
+            position=pos,
+        )
 
     def at_eof(self) -> bool:
         """Checks if no remaining input is left."""
@@ -78,13 +113,5 @@ class ParseContext:
         return self.index == 0
 
     def line_and_column(self) -> tuple[int, int]:
-        """Computes the 1-based line and column of the current index in the input string"""
-        line = 1
-        column = 1
-        for char in self.source[0 : self.index]:
-            if char == "\n":
-                line += 1
-                column = 1
-            else:
-                column += 1
-        return line, column
+        """Returns the 1-based line and column of the current index in the input string"""
+        return self.position
