@@ -10,13 +10,17 @@ from pathlib import Path
 from statistics import mean, median, stdev
 from typing import Any
 
+from pyforma._parser import TemplateSyntaxConfig
 from pyforma._template import Template
 from pyforma._util import defaulted
 
 
 @cache
-def _load(canonical_path: Path) -> Template:
-    return Template(canonical_path)
+def _load(
+    canonical_path: Path,
+    syntax: TemplateSyntaxConfig | None = None,
+) -> Template:
+    return Template(canonical_path, syntax=syntax)
 
 
 class TemplateContext:
@@ -43,7 +47,13 @@ class TemplateContext:
         )
         self._base_path: Path | None = base_path
 
-    def load_template(self, path: Path, /) -> Template:
+    def load_template(
+        self,
+        path: Path,
+        /,
+        *,
+        syntax: TemplateSyntaxConfig | None = None,
+    ) -> Template:
         """Load a template from file
 
         The loaded files are cached; every unique file is only retrieved from disk and parsed once.
@@ -52,6 +62,7 @@ class TemplateContext:
             path: Path to the template file
                   If this path is relative, it is assumed to be relative to the context's base path. If no base path
                   was provided, the cwd is used as reference point.
+            syntax: Optional syntax configuration.
 
         Returns:
             The loaded template
@@ -64,7 +75,7 @@ class TemplateContext:
             path = base_path / path
 
         path = path.resolve()
-        return _load(path)
+        return _load(path, syntax)
 
     def unresolved_identifiers(self, template: Template) -> set[str]:
         """Provides access to the set of unresolved identifiers in the template
