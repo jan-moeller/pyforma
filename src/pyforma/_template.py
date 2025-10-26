@@ -79,6 +79,7 @@ class Template:
 
         Raises:
             ValueError: If a variable cannot be substituted due to missing renderer
+            TypeError: If variable substitution leads to an unsupported operation, such as an operator not supported for that type
         """
 
         if renderers is None:
@@ -145,6 +146,8 @@ class Template:
 
         Raises:
             ValueError: If some variables in the template remain unresolved after substitution
+            ValueError: If a variable cannot be substituted due to missing renderer
+            TypeError: If variable substitution leads to an unsupported operation, such as an operator not supported for that type
         """
         if variables is None:
             variables = {}

@@ -68,6 +68,7 @@ class TemplateContext:
             The loaded template
 
         Raises:
+            ValueError: If the contents cannot be parsed
             OSError: If the file cannot be opened
         """
         if not path.is_absolute():
@@ -110,6 +111,7 @@ class TemplateContext:
 
         Raises:
             ValueError: If a variable cannot be substituted due to missing renderer
+            TypeError: If variable substitution leads to an unsupported operation, such as an operator not supported for that type
         """
         _variables = self._variables | defaulted(variables, dict[str, Any]())
         _renderers = list({*defaulted(renderers, ()), *self._renderers})
@@ -136,6 +138,8 @@ class TemplateContext:
 
         Raises:
             ValueError: If some variables in the template remain unresolved after substitution
+            ValueError: If a variable cannot be substituted due to missing renderer
+            TypeError: If variable substitution leads to an unsupported operation, such as an operator not supported for that type
         """
         _variables = self._variables | defaulted(variables, dict[str, Any]())
         _renderers = list({*defaulted(renderers, ()), *self._renderers})
