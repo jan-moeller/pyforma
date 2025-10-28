@@ -33,6 +33,12 @@ def identifier_expression(context: ParseContext) -> ParseResult[Expression]:
                 result=ValueExpression(origin=context.origin(), value=None),
                 context=r.context,
             )
+        case "lambda":
+            return ParseResult.make_failure(
+                context=context,
+                expected="identifier",
+                cause=r,
+            )
         case _:
             return ParseResult.make_success(
                 result=IdentifierExpression(

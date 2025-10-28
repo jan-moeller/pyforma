@@ -4,6 +4,7 @@ from typing import LiteralString, cast
 
 from pyforma._ast.expression import (
     AttributeExpression,
+    LambdaExpression,
     ListExpression,
     DictExpression,
     Expression,
@@ -121,6 +122,26 @@ dict_expression = transform_success(
     transform=lambda s, c: DictExpression(origin=c.origin(), elements=s[1]),
 )
 
+lambda_expression = transform_success(
+    sequence(
+        literal("lambda"),
+        whitespace,
+        delimited(
+            delim=sequence(whitespace, literal(","), whitespace),
+            content=identifier,
+            allow_trailing_delim=False,
+        ),
+        whitespace,
+        literal(":"),
+        whitespace,
+        expression,
+    ),
+    transform=lambda s, c: LambdaExpression(
+        origin=c.origin(), parameters=s[2], return_value=s[6]
+    ),
+)
+
+
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
     string_literal_expression,
@@ -129,6 +150,7 @@ simple_expression: Parser[Expression] = alternation(
     paren_expression,
     list_expression,
     dict_expression,
+    lambda_expression,
     name="simple-expression",
 )
 

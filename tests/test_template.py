@@ -22,6 +22,7 @@ from pyforma._ast.expression import (
     AttributeExpression,
     ListExpression,
     DictExpression,
+    LambdaExpression,
 )
 from pyforma._ast.origin import Origin
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
@@ -72,6 +73,9 @@ class SizedNotIterable(Sized):
         ("{{{a: 1}}}", {"a"}),
         ("{{{1: a}}}", {"a"}),
         ("{{{a: b}}}", {"a", "b"}),
+        ("{{lambda: a}}", {"a"}),
+        ("{{lambda a: a}}", set[str]()),
+        ("{{lambda a: a + b + c}}", {"b", "c"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -886,6 +890,51 @@ def test_unresolved_identifiers(
                 (IdentifierExpression(origin=Origin(position=(1, 3)), identifier="t"),)
             ),
         ),
+        ("{{(lambda: 42)()}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x: 40 + x)(2)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x: 40 + x)(x=2)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x, y: x + y)(2, 40)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x, y: x + y)(2, y=40)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x, y: x + y)(x=2, y=40)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x, y: 42)(0, 0)}}", {}, False, None, nullcontext(("42",))),
+        ("{{(lambda x, y: x + y)()}}", {}, False, None, pytest.raises(TypeError)),
+        ("{{(lambda x: x)(1, x=2)}}", {}, False, None, pytest.raises(TypeError)),
+        ("{{(lambda x: 1/x)(0)}}", {}, False, None, pytest.raises(TypeError)),
+        (
+            "{{(lambda x: x + y)(1)}}",
+            {},
+            False,
+            None,
+            nullcontext(
+                (
+                    CallExpression(
+                        origin=Origin(position=(1, 3)),
+                        callee=LambdaExpression(
+                            origin=Origin(position=(1, 4)),
+                            parameters=("x",),
+                            return_value=BinOpExpression(
+                                origin=Origin(position=(1, 14)),
+                                op="+",
+                                lhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 14)),
+                                    identifier="x",
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 18)),
+                                    identifier="y",
+                                ),
+                            ),
+                        ),
+                        arguments=(
+                            ValueExpression(origin=Origin(position=(1, 21)), value=1),
+                        ),
+                        kw_arguments=(),
+                    ),
+                )
+            ),
+        ),
+        ("{{(lambda x: x + y)(1)}}", {"y": 41}, False, None, nullcontext(("42",))),
+        ("{{(lambda x: x)(1)}}", {"x": 42}, False, None, nullcontext(("1",))),
     ],
 )
 def test_substitute(
