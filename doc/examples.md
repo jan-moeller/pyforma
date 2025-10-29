@@ -39,3 +39,13 @@ template2 = template.substitute(dict(extension=extension))
 print(template2.render(dict(first="Hello, World!", second="This is an example.")))
 # Prints "<div><p>Hello, World!</p><p>This is an example.</p></div>"
 ```
+
+## Macros using `with` and `lambda`
+
+```python
+from pyforma import Template
+
+template = Template("{%with my_macro=lambda x: x+2%}{{my_macro(foo)}}{%endwith%}")
+print(template.render(dict(foo=40)))
+# Prints "42"
+```

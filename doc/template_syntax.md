@@ -34,6 +34,7 @@ PyForma expressions are a subset of Python expressions.
 - **Indexing**: Similarly, `expr[i]` is used to index into a container.
 - **Function Calls**: The python call syntax `expr(arg_expr, ..., kw=arg_expr, ...)` is supported.
 - **Attribute Access**: The dot-operator works as expected: `expr.attribute`.
+- **Lambda Functions**: Short functions can be defined using the `lambda arg1, ...: expr` syntax.
 
 The operator precedence follows Python's example.
 
