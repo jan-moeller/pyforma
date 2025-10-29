@@ -15,7 +15,8 @@ assert template.unresolved_identifiers() == {"subject", "lib_name"}
 template = template.substitute({"lib_name": "PyForma"})
 assert template.unresolved_identifiers() == {"subject"}
 
-print(template.render({"subject": "World"}))  # Prints "Hello, World! This is PyForma."
+print(template.render({"subject": "World"}))
+#> Hello, World! This is PyForma.
 ```
 
 ## Features

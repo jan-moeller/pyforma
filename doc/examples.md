@@ -24,7 +24,7 @@ context = DefaultTemplateContext()
 template = Template("total = {{ sum(numbers) }}")
 # Render using context, which comes with the sum function
 print(context.render(template, variables=dict(numbers=[1, 2, 3])))
-# Prints "total = 6"
+#> total = 6
 ```
 
 ## Inserting `Template`s into `Template`s
@@ -37,7 +37,7 @@ extension = Template("<p>{{first}}</p><p>{{second}}</p>")
 template2 = template.substitute(dict(extension=extension))
 # template2 is equivalent to Template("<div><p>{{first}}</p><p>{{second}}</p></div>")
 print(template2.render(dict(first="Hello, World!", second="This is an example.")))
-# Prints "<div><p>Hello, World!</p><p>This is an example.</p></div>"
+#> <div><p>Hello, World!</p><p>This is an example.</p></div>
 ```
 
 ## Macros using `with` and `lambda`
@@ -47,5 +47,5 @@ from pyforma import Template
 
 template = Template("{%with my_macro=lambda x: x+2%}{{my_macro(foo)}}{%endwith%}")
 print(template.render(dict(foo=40)))
-# Prints "42"
+#> 42
 ```
