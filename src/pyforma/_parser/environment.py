@@ -8,7 +8,7 @@ from pyforma._ast.environment import (
     ForEnvironment,
 )
 from pyforma._ast.comment import Comment
-from pyforma._ast.expression import Expression
+from pyforma._ast.expressions import Expression
 from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .until import until

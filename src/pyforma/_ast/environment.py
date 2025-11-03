@@ -5,7 +5,8 @@ from typing import Any, override, Annotated
 
 from annotated_types import MinLen
 
-from .expression import Expression, ValueExpression
+from .expressions import Expression
+from .expression import ValueExpression
 from .comment import Comment
 
 

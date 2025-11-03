@@ -13,7 +13,7 @@ from .repetition import repetition
 from .parser import Parser, parser
 from .comment import comment
 from .template_syntax_config import TemplateSyntaxConfig
-from pyforma._ast.expression import Expression
+from pyforma._ast.expressions import Expression
 from pyforma._ast.comment import Comment
 from pyforma._ast.environment import Environment
 

@@ -8,7 +8,7 @@ from .sequence import sequence
 from .parser import Parser
 from .expression import expression
 from .template_syntax_config import BlockSyntaxConfig
-from pyforma._ast.expression import Expression
+from pyforma._ast.expressions import Expression
 
 
 @cache
