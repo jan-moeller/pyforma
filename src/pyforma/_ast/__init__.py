@@ -2,7 +2,7 @@ from .comment import Comment as Comment
 from .expressions import Expression as Expression
 from .expressions import ValueExpression as ValueExpression
 from .expressions import IdentifierExpression as IdentifierExpression
-from .expression import UnOpExpression as UnOpExpression
+from .expressions import UnOpExpression as UnOpExpression
 from .expression import BinOpExpression as BinOpExpression
 from .expression import IndexExpression as IndexExpression
 from .expression import CallExpression as CallExpression

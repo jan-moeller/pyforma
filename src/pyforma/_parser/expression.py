@@ -2,14 +2,13 @@ from dataclasses import dataclass
 from functools import cache
 from typing import LiteralString, cast
 
-from pyforma._ast.expressions import Expression, ValueExpression
+from pyforma._ast.expressions import Expression, ValueExpression, UnOpExpression
 from pyforma._ast.expression import (
     AttributeExpression,
     LambdaExpression,
     ListExpression,
     DictExpression,
     BinOpExpression,
-    UnOpExpression,
     CallExpression,
     IndexExpression,
 )
