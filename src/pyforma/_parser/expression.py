@@ -11,10 +11,10 @@ from pyforma._ast.expressions import (
     CallExpression,
     AttributeExpression,
     ListExpression,
+    DictExpression,
 )
 from pyforma._ast.expression import (
     LambdaExpression,
-    DictExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead

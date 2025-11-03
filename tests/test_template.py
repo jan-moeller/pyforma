@@ -21,9 +21,9 @@ from pyforma._ast.expressions import (
     CallExpression,
     AttributeExpression,
     ListExpression,
+    DictExpression,
 )
 from pyforma._ast.expression import (
-    DictExpression,
     LambdaExpression,
 )
 from pyforma._ast.origin import Origin
