@@ -5,10 +5,10 @@ from pyforma._ast import (
     ValueExpression,
     UnOpExpression,
     BinOpExpression,
+    IndexExpression,
 )
 from pyforma._ast.expression import (
     CallExpression,
-    IndexExpression,
     ListExpression,
     AttributeExpression,
 )

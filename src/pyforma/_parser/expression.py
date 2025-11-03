@@ -7,6 +7,7 @@ from pyforma._ast.expressions import (
     ValueExpression,
     UnOpExpression,
     BinOpExpression,
+    IndexExpression,
 )
 from pyforma._ast.expression import (
     AttributeExpression,
@@ -14,7 +15,6 @@ from pyforma._ast.expression import (
     ListExpression,
     DictExpression,
     CallExpression,
-    IndexExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
