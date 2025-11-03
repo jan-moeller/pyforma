@@ -13,9 +13,8 @@ from pyforma._ast.environment import (
     WithEnvironment,
     ForEnvironment,
 )
-from pyforma._ast.expressions import ValueExpression, UnOpExpression
+from pyforma._ast.expressions import ValueExpression, UnOpExpression, BinOpExpression
 from pyforma._ast.expression import (
-    BinOpExpression,
     IndexExpression,
     CallExpression,
     AttributeExpression,

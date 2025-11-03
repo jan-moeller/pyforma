@@ -1,8 +1,12 @@
 import pytest
 
-from pyforma._ast import IdentifierExpression, ValueExpression, UnOpExpression
-from pyforma._ast.expression import (
+from pyforma._ast import (
+    IdentifierExpression,
+    ValueExpression,
+    UnOpExpression,
     BinOpExpression,
+)
+from pyforma._ast.expression import (
     CallExpression,
     IndexExpression,
     ListExpression,

@@ -3,7 +3,7 @@ from .expressions import Expression as Expression
 from .expressions import ValueExpression as ValueExpression
 from .expressions import IdentifierExpression as IdentifierExpression
 from .expressions import UnOpExpression as UnOpExpression
-from .expression import BinOpExpression as BinOpExpression
+from .expressions import BinOpExpression as BinOpExpression
 from .expression import IndexExpression as IndexExpression
 from .expression import CallExpression as CallExpression
 from .expression import ListExpression as ListExpression
