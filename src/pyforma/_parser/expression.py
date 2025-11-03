@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import cache
 from typing import LiteralString, cast
 
-from pyforma._ast.expressions import Expression
+from pyforma._ast.expressions import Expression, ValueExpression
 from pyforma._ast.expression import (
     AttributeExpression,
     LambdaExpression,
@@ -12,7 +12,6 @@ from pyforma._ast.expression import (
     UnOpExpression,
     CallExpression,
     IndexExpression,
-    ValueExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead

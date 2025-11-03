@@ -1,7 +1,7 @@
 import pytest
 
-from pyforma._ast.expressions import Expression
-from pyforma._ast.expression import IdentifierExpression, ValueExpression
+from pyforma._ast.expressions import Expression, ValueExpression
+from pyforma._ast.expression import IdentifierExpression
 from pyforma._parser import (
     ParseContext,
     expression_block,
