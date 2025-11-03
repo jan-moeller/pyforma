@@ -9,3 +9,4 @@ from .expressions import CallExpression as CallExpression
 from .expressions import AttributeExpression as AttributeExpression
 from .expressions import ListExpression as ListExpression
 from .expressions import DictExpression as DictExpression
+from .expressions import LambdaExpression as LambdaExpression

@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import override, Any
 
-from .expressions import Expression, ValueExpression
+from .expression import Expression
+from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)

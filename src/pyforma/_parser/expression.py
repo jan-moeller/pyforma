@@ -12,8 +12,6 @@ from pyforma._ast.expressions import (
     AttributeExpression,
     ListExpression,
     DictExpression,
-)
-from pyforma._ast.expression import (
     LambdaExpression,
 )
 from pyforma._util import defaulted
