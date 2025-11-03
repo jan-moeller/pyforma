@@ -7,10 +7,10 @@ from pyforma._ast import (
     BinOpExpression,
     IndexExpression,
     CallExpression,
+    AttributeExpression,
 )
 from pyforma._ast.expression import (
     ListExpression,
-    AttributeExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._ast.origin import Origin

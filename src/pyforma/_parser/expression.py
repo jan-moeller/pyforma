@@ -9,9 +9,9 @@ from pyforma._ast.expressions import (
     BinOpExpression,
     IndexExpression,
     CallExpression,
+    AttributeExpression,
 )
 from pyforma._ast.expression import (
-    AttributeExpression,
     LambdaExpression,
     ListExpression,
     DictExpression,
