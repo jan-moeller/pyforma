@@ -20,9 +20,9 @@ from pyforma._ast.expressions import (
     IndexExpression,
     CallExpression,
     AttributeExpression,
+    ListExpression,
 )
 from pyforma._ast.expression import (
-    ListExpression,
     DictExpression,
     LambdaExpression,
 )

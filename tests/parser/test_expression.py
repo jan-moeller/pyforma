@@ -8,8 +8,6 @@ from pyforma._ast import (
     IndexExpression,
     CallExpression,
     AttributeExpression,
-)
-from pyforma._ast.expression import (
     ListExpression,
 )
 from pyforma._parser.parse_context import ParseContext

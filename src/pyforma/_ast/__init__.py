@@ -7,4 +7,4 @@ from .expressions import BinOpExpression as BinOpExpression
 from .expressions import IndexExpression as IndexExpression
 from .expressions import CallExpression as CallExpression
 from .expressions import AttributeExpression as AttributeExpression
-from .expression import ListExpression as ListExpression
+from .expressions import ListExpression as ListExpression

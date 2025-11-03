@@ -6,3 +6,4 @@ from .binop_expression import BinOpExpression as BinOpExpression
 from .index_expression import IndexExpression as IndexExpression
 from .call_expression import CallExpression as CallExpression
 from .attribute_expression import AttributeExpression as AttributeExpression
+from .list_expression import ListExpression as ListExpression
