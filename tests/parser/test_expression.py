@@ -6,9 +6,9 @@ from pyforma._ast import (
     UnOpExpression,
     BinOpExpression,
     IndexExpression,
+    CallExpression,
 )
 from pyforma._ast.expression import (
-    CallExpression,
     ListExpression,
     AttributeExpression,
 )

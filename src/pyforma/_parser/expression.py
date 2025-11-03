@@ -8,13 +8,13 @@ from pyforma._ast.expressions import (
     UnOpExpression,
     BinOpExpression,
     IndexExpression,
+    CallExpression,
 )
 from pyforma._ast.expression import (
     AttributeExpression,
     LambdaExpression,
     ListExpression,
     DictExpression,
-    CallExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead

@@ -5,5 +5,5 @@ from .expressions import IdentifierExpression as IdentifierExpression
 from .expressions import UnOpExpression as UnOpExpression
 from .expressions import BinOpExpression as BinOpExpression
 from .expressions import IndexExpression as IndexExpression
-from .expression import CallExpression as CallExpression
+from .expressions import CallExpression as CallExpression
 from .expression import ListExpression as ListExpression
