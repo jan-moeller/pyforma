@@ -9,6 +9,7 @@ from pyforma._ast import (
     CallExpression,
     AttributeExpression,
     ListExpression,
+    IfExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._ast.origin import Origin
@@ -543,6 +544,98 @@ _origin = Origin(position=(1, 1))
                 )
             ),
             3,
+        ),
+        (
+            "if True: 42",
+            ParseSuccess(
+                result=IfExpression(
+                    origin=_origin,
+                    cases=(
+                        (
+                            ValueExpression(origin=Origin(position=(1, 4)), value=True),
+                            ValueExpression(origin=Origin(position=(1, 10)), value=42),
+                        ),
+                    ),
+                )
+            ),
+            11,
+        ),
+        (
+            "if a: 40 + b else: 0",
+            ParseSuccess(
+                result=IfExpression(
+                    origin=_origin,
+                    cases=(
+                        (
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 4)),
+                                identifier="a",
+                            ),
+                            BinOpExpression(
+                                origin=Origin(position=(1, 7)),
+                                op="+",
+                                lhs=ValueExpression(
+                                    origin=Origin(position=(1, 7)),
+                                    value=40,
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 12)),
+                                    identifier="b",
+                                ),
+                            ),
+                        ),
+                        (
+                            ValueExpression(
+                                origin=Origin(position=(1, 14)),
+                                value=True,
+                            ),
+                            ValueExpression(origin=Origin(position=(1, 20)), value=0),
+                        ),
+                    ),
+                )
+            ),
+            20,
+        ),
+        (
+            "if a: b elif c : d else: e",
+            ParseSuccess(
+                result=IfExpression(
+                    origin=_origin,
+                    cases=(
+                        (
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 4)),
+                                identifier="a",
+                            ),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 7)),
+                                identifier="b",
+                            ),
+                        ),
+                        (
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 14)),
+                                identifier="c",
+                            ),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 18)),
+                                identifier="d",
+                            ),
+                        ),
+                        (
+                            ValueExpression(
+                                origin=Origin(position=(1, 20)),
+                                value=True,
+                            ),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 26)),
+                                identifier="e",
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            26,
         ),
     ],
 )

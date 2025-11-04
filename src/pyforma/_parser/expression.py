@@ -13,6 +13,7 @@ from pyforma._ast.expressions import (
     ListExpression,
     DictExpression,
     LambdaExpression,
+    IfExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
@@ -141,6 +142,63 @@ lambda_expression = transform_success(
     ),
 )
 
+if_expression = transform_success(
+    sequence(
+        transform_success(
+            sequence(
+                literal("if"),
+                non_empty(whitespace),
+                expression,
+                whitespace,
+                literal(":"),
+                whitespace,
+                expression,
+                whitespace,
+                name="if-branch",
+            ),
+            transform=lambda s: (s[2], s[6]),
+        ),
+        repetition(
+            transform_success(
+                sequence(
+                    literal("elif"),
+                    non_empty(whitespace),
+                    expression,
+                    whitespace,
+                    literal(":"),
+                    whitespace,
+                    expression,
+                    whitespace,
+                    name="elif-branch",
+                ),
+                transform=lambda s: (s[2], s[6]),
+            )
+        ),
+        transform_success(
+            option(
+                sequence(
+                    literal("else"),
+                    whitespace,
+                    literal(":"),
+                    whitespace,
+                    expression,
+                    whitespace,
+                    name="else-branch",
+                ),
+            ),
+            transform=lambda s, c: (
+                (
+                    ValueExpression(origin=c.origin(), value=True),
+                    s[4],
+                ),
+            )
+            if s is not None
+            else (),
+        ),
+    ),
+    transform=lambda s, c: IfExpression(origin=c.origin(), cases=(s[0], *s[1], *s[2])),
+)
+
 
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
@@ -151,6 +209,7 @@ simple_expression: Parser[Expression] = alternation(
     list_expression,
     dict_expression,
     lambda_expression,
+    if_expression,
     name="simple-expression",
 )
 

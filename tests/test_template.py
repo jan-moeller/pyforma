@@ -6,7 +6,7 @@ from typing import Any, ContextManager, final, override
 import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
-from pyforma._ast import Expression, Comment, IdentifierExpression
+from pyforma._ast import Expression, Comment, IdentifierExpression, IfExpression
 from pyforma._ast.environment import (
     IfEnvironment,
     TemplateEnvironment,
@@ -76,6 +76,9 @@ class SizedNotIterable(Sized):
         ("{{lambda: a}}", {"a"}),
         ("{{lambda a: a}}", set[str]()),
         ("{{lambda a: a + b + c}}", {"b", "c"}),
+        ("{{if a: b}}", {"a", "b"}),
+        ("{{if a: b else: c}}", {"a", "b", "c"}),
+        ("{{if a: b elif c: d else: e}}", {"a", "b", "c", "d", "e"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -935,6 +938,101 @@ def test_unresolved_identifiers(
         ),
         ("{{(lambda x: x + y)(1)}}", {"y": 41}, False, None, nullcontext(("42",))),
         ("{{(lambda x: x)(1)}}", {"x": 42}, False, None, nullcontext(("1",))),
+        ("{{if True: 42}}", {}, False, None, nullcontext(("42",))),
+        ("{{if False: 42}}", {}, False, [(type(None), str)], nullcontext(("None",))),
+        ("{{if a: 42 else: 40}}", {"a": True}, False, None, nullcontext(("42",))),
+        ("{{if a: 42 else: 40}}", {"a": False}, False, None, nullcontext(("40",))),
+        (
+            "{{if a: 42 elif b: 41 else: 40}}",
+            {"a": True},
+            False,
+            None,
+            nullcontext(("42",)),
+        ),
+        (
+            "{{if a: 42 elif b: 41 else: 40}}",
+            {"a": False},
+            False,
+            None,
+            nullcontext(
+                (
+                    IfExpression(
+                        origin=Origin(position=(1, 3)),
+                        cases=(
+                            (
+                                IdentifierExpression(
+                                    origin=Origin(position=(1, 17)),
+                                    identifier="b",
+                                ),
+                                ValueExpression(
+                                    origin=Origin(position=(1, 20)),
+                                    value=41,
+                                ),
+                            ),
+                            (
+                                ValueExpression(
+                                    origin=Origin(position=(1, 23)),
+                                    value=True,
+                                ),
+                                ValueExpression(
+                                    origin=Origin(position=(1, 29)),
+                                    value=40,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        (
+            "{{if a: 42 elif b: 41 else: 40}}",
+            {"a": False, "b": True},
+            False,
+            None,
+            nullcontext(("41",)),
+        ),
+        (
+            "{{if a: 42 elif b: 41 else: 40}}",
+            {"a": False, "b": False},
+            False,
+            None,
+            nullcontext(("40",)),
+        ),
+        (
+            "{{if a: 42 elif b: 41 else: 40}}",
+            {"b": False},
+            False,
+            None,
+            nullcontext(
+                (
+                    IfExpression(
+                        origin=Origin(position=(1, 3)),
+                        cases=(
+                            (
+                                IdentifierExpression(
+                                    origin=Origin(position=(1, 6)),
+                                    identifier="a",
+                                ),
+                                ValueExpression(
+                                    origin=Origin(position=(1, 9)),
+                                    value=42,
+                                ),
+                            ),
+                            (
+                                ValueExpression(
+                                    origin=Origin(position=(1, 23)),
+                                    value=True,
+                                ),
+                                ValueExpression(
+                                    origin=Origin(position=(1, 29)),
+                                    value=40,
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
     ],
 )
 def test_substitute(

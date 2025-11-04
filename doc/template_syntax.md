@@ -35,6 +35,9 @@ PyForma expressions are a subset of Python expressions.
 - **Function Calls**: The python call syntax `expr(arg_expr, ..., kw=arg_expr, ...)` is supported.
 - **Attribute Access**: The dot-operator works as expected: `expr.attribute`.
 - **Lambda Functions**: Short functions can be defined using the `lambda arg1, ...: expr` syntax.
+- **If-Expressions**: Unlike Python, PyForma supports conditions of the form
+  `if expr1: expr2 elif expr3: expr4 else: expr5`. The `elif` and `else` cases are optional. If
+  no case matches, the expression evaluates to `None`.
 
 The operator precedence follows Python's example.
 
