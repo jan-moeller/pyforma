@@ -10,6 +10,7 @@ from pyforma._ast import (
     AttributeExpression,
     ListExpression,
     IfExpression,
+    ForExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._ast.origin import Origin
@@ -636,6 +637,100 @@ _origin = Origin(position=(1, 1))
                 )
             ),
             26,
+        ),
+        (
+            "for a in b : a",
+            ParseSuccess(
+                result=ForExpression(
+                    origin=_origin,
+                    var_names=("a",),
+                    iter_expr=IdentifierExpression(
+                        origin=Origin(position=(1, 10)), identifier="b"
+                    ),
+                    expr=IdentifierExpression(
+                        origin=Origin(position=(1, 14)), identifier="a"
+                    ),
+                )
+            ),
+            14,
+        ),
+        (
+            "for a, b in c : a + b",
+            ParseSuccess(
+                result=ForExpression(
+                    origin=_origin,
+                    var_names=("a", "b"),
+                    iter_expr=IdentifierExpression(
+                        origin=Origin(position=(1, 13)), identifier="c"
+                    ),
+                    expr=BinOpExpression(
+                        origin=Origin(position=(1, 17)),
+                        op="+",
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 17)),
+                            identifier="a",
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 21)),
+                            identifier="b",
+                        ),
+                    ),
+                )
+            ),
+            21,
+        ),
+        (
+            "for a,b in [[1, 2],[3,4]]: a + b",
+            ParseSuccess(
+                result=ForExpression(
+                    origin=_origin,
+                    var_names=("a", "b"),
+                    iter_expr=ListExpression(
+                        origin=Origin(position=(1, 12)),
+                        elements=(
+                            ListExpression(
+                                origin=Origin(position=(1, 13)),
+                                elements=(
+                                    ValueExpression(
+                                        origin=Origin(position=(1, 14)),
+                                        value=1,
+                                    ),
+                                    ValueExpression(
+                                        origin=Origin(position=(1, 17)),
+                                        value=2,
+                                    ),
+                                ),
+                            ),
+                            ListExpression(
+                                origin=Origin(position=(1, 20)),
+                                elements=(
+                                    ValueExpression(
+                                        origin=Origin(position=(1, 21)),
+                                        value=3,
+                                    ),
+                                    ValueExpression(
+                                        origin=Origin(position=(1, 23)),
+                                        value=4,
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    expr=BinOpExpression(
+                        origin=Origin(position=(1, 28)),
+                        op="+",
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 28)),
+                            identifier="a",
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 32)),
+                            identifier="b",
+                        ),
+                    ),
+                )
+            ),
+            32,
         ),
     ],
 )

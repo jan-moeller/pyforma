@@ -10,3 +10,4 @@ from .list_expression import ListExpression as ListExpression
 from .dict_expression import DictExpression as DictExpression
 from .lambda_expression import LambdaExpression as LambdaExpression
 from .if_expression import IfExpression as IfExpression
+from .for_expression import ForExpression as ForExpression

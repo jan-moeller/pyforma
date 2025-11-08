@@ -11,3 +11,4 @@ from .expressions import ListExpression as ListExpression
 from .expressions import DictExpression as DictExpression
 from .expressions import LambdaExpression as LambdaExpression
 from .expressions import IfExpression as IfExpression
+from .expressions import ForExpression as ForExpression

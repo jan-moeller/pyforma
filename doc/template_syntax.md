@@ -38,6 +38,9 @@ PyForma expressions are a subset of Python expressions.
 - **If-Expressions**: Unlike Python, PyForma supports conditions of the form
   `if expr1: expr2 elif expr3: expr4 else: expr5`. The `elif` and `else` cases are optional. If
   no case matches, the expression evaluates to `None`.
+- **For-Expressions**: Analogous to if expressions, for expressions also use statement syntax:
+  `for identifier in expr1: expr2`. Instead of a plain identifier, the iterable can be decomposed
+  immediately: `for a, b in expr1: a + b`. Neither `continue` not `break` are supported.
 
 The operator precedence follows Python's example.
 

@@ -6,7 +6,13 @@ from typing import Any, ContextManager, final, override
 import pytest
 
 from pyforma import Template, TemplateSyntaxConfig
-from pyforma._ast import Expression, Comment, IdentifierExpression, IfExpression
+from pyforma._ast import (
+    Expression,
+    Comment,
+    IdentifierExpression,
+    IfExpression,
+    ForExpression,
+)
 from pyforma._ast.environment import (
     IfEnvironment,
     TemplateEnvironment,
@@ -79,6 +85,10 @@ class SizedNotIterable(Sized):
         ("{{if a: b}}", {"a", "b"}),
         ("{{if a: b else: c}}", {"a", "b", "c"}),
         ("{{if a: b elif c: d else: e}}", {"a", "b", "c", "d", "e"}),
+        ("{{for a in b: a}}", {"b"}),
+        ("{{for a in b: a + c}}", {"b", "c"}),
+        ("{{for a in a: a}}", {"a"}),
+        ("{{for a, b in c: a + b}}", {"c"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -1032,6 +1042,152 @@ def test_unresolved_identifiers(
                     ),
                 )
             ),
+        ),
+        (
+            "{{for a in b: a}}",
+            {"b": [1, 2]},
+            False,
+            {(list, str)},
+            nullcontext(("[1, 2]",)),
+        ),
+        (
+            "{{for a, b in c: a+b}}",
+            {"c": [(1, 2), (3, 4)]},
+            False,
+            {(list, str)},
+            nullcontext(("[3, 7]",)),
+        ),
+        (
+            "{{for a in a: a+2}}",
+            {"a": [1, 2]},
+            False,
+            {(list, str)},
+            nullcontext(("[3, 4]",)),
+        ),
+        (
+            "{{for a in b: a+2}}",
+            {},
+            False,
+            None,
+            nullcontext(
+                (
+                    ForExpression(
+                        origin=Origin(position=(1, 3)),
+                        var_names=("a",),
+                        iter_expr=IdentifierExpression(
+                            origin=Origin(position=(1, 12)),
+                            identifier="b",
+                        ),
+                        expr=BinOpExpression(
+                            origin=Origin(position=(1, 15)),
+                            op="+",
+                            lhs=IdentifierExpression(
+                                origin=Origin(position=(1, 15)),
+                                identifier="a",
+                            ),
+                            rhs=ValueExpression(
+                                origin=Origin(position=(1, 17)), value=2
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{{for a in b: a+c}}",
+            {"b": [1, 2]},
+            False,
+            None,
+            nullcontext(
+                (
+                    ListExpression(
+                        origin=Origin(position=(1, 3)),
+                        elements=(
+                            BinOpExpression(
+                                origin=Origin(position=(1, 15)),
+                                op="+",
+                                lhs=ValueExpression(
+                                    origin=Origin(position=(1, 15)),
+                                    value=1,
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 17)),
+                                    identifier="c",
+                                ),
+                            ),
+                            BinOpExpression(
+                                origin=Origin(position=(1, 15)),
+                                op="+",
+                                lhs=ValueExpression(
+                                    origin=Origin(position=(1, 15)),
+                                    value=2,
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 17)),
+                                    identifier="c",
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{{for a in b: a+c}}",
+            {"c": 2},
+            False,
+            None,
+            nullcontext(
+                (
+                    ForExpression(
+                        origin=Origin(position=(1, 3)),
+                        var_names=("a",),
+                        iter_expr=IdentifierExpression(
+                            origin=Origin(position=(1, 12)),
+                            identifier="b",
+                        ),
+                        expr=BinOpExpression(
+                            origin=Origin(position=(1, 15)),
+                            op="+",
+                            lhs=IdentifierExpression(
+                                origin=Origin(position=(1, 15)),
+                                identifier="a",
+                            ),
+                            rhs=ValueExpression(
+                                origin=Origin(position=(1, 17)), value=2
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{{for a in b: a+2}}",
+            {"b": None},
+            False,
+            None,
+            pytest.raises(TypeError),
+        ),
+        (
+            "{{for a, b in c: a+b}}",
+            {"c": [1, 2, 3]},
+            False,
+            None,
+            pytest.raises(TypeError),
+        ),
+        (
+            "{{for a, b in c: a+b}}",
+            {"c": [[]]},
+            False,
+            None,
+            pytest.raises(TypeError),
+        ),
+        (
+            "{{for a, b in c: a+b}}",
+            {"c": SizedNotIterable()},
+            False,
+            None,
+            pytest.raises(TypeError),
         ),
     ],
 )

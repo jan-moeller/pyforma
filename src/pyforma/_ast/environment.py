@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sized, Iterable
 from dataclasses import dataclass
 from typing import Any, override, Annotated
 
@@ -7,23 +6,7 @@ from annotated_types import MinLen
 
 from .expressions import Expression, ValueExpression
 from .comment import Comment
-
-
-def _destructure_value(identifiers: tuple[str, ...], value: Any) -> dict[str, Any]:
-    if len(identifiers) > 1:
-        if not isinstance(value, Sized):
-            raise TypeError(f"Can't unpack {value}: not sized")
-        elif len(identifiers) != len(value):
-            raise TypeError(
-                f"Can't unpack {value}: has length {len(identifiers)} instead of {len(identifiers)}"
-            )
-        if not isinstance(value, Iterable):
-            raise TypeError(f"Can't unpack {value}: not iterable")
-        vs = {k: v for k, v in zip(identifiers, value)}
-    else:
-        vs = {identifiers[0]: value}  # pyright: ignore[reportGeneralTypeIssues]
-
-    return vs
+from pyforma._util import destructure_value
 
 
 class Environment(ABC):
@@ -104,7 +87,7 @@ class WithEnvironment(Environment):
         }
         for destructuring in _variables:
             if isinstance(destructuring.expression, ValueExpression):
-                relevant_variables |= _destructure_value(
+                relevant_variables |= destructure_value(
                     destructuring.identifiers, destructuring.expression.value
                 )
 
@@ -184,7 +167,7 @@ class ForEnvironment(Environment):
         if isinstance(_expression, ValueExpression):
             _contents: list[TemplateEnvironment] = []
             for value in _expression.value:
-                vs = _destructure_value(self.identifier, value)
+                vs = destructure_value(self.identifier, value)
                 c = _content.substitute(vs)
                 _contents.append(c)
             return TemplateEnvironment(content=tuple(_contents)).substitute({})
