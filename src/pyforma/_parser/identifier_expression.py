@@ -33,7 +33,7 @@ def identifier_expression(context: ParseContext) -> ParseResult[Expression]:
                 result=ValueExpression(origin=context.origin(), value=None),
                 context=r.context,
             )
-        case "lambda" | "if" | "elif" | "else" | "for":
+        case "lambda" | "if" | "elif" | "else" | "for" | "with":
             return ParseResult.make_failure(
                 context=context,
                 expected="identifier",

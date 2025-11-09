@@ -12,6 +12,7 @@ from pyforma._ast import (
     IdentifierExpression,
     IfExpression,
     ForExpression,
+    WithExpression,
 )
 from pyforma._ast.environment import (
     IfEnvironment,
@@ -89,6 +90,10 @@ class SizedNotIterable(Sized):
         ("{{for a in b: a + c}}", {"b", "c"}),
         ("{{for a in a: a}}", {"a"}),
         ("{{for a, b in c: a + b}}", {"c"}),
+        ("{{with a=b: a}}", {"b"}),
+        ("{{with a,b=c: a}}", {"c"}),
+        ("{{with a, b=b: a}}", {"b"}),
+        ("{{with a, b=c; d,e=f: a}}", {"c", "f"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -1188,6 +1193,113 @@ def test_unresolved_identifiers(
             False,
             None,
             pytest.raises(TypeError),
+        ),
+        (
+            "{{with a=c: a}}",
+            {"c": 1},
+            False,
+            None,
+            nullcontext(("1",)),
+        ),
+        (
+            "{{with a,b=c: a+b}}",
+            {"c": (1, 2)},
+            False,
+            None,
+            nullcontext(("3",)),
+        ),
+        (
+            "{{with a,b=c: a+b+d}}",
+            {"c": (1, 2), "d": 3},
+            False,
+            None,
+            nullcontext(("6",)),
+        ),
+        (
+            "{{with a , b = c ; c , d = e: a+c}}",
+            {"c": (1, 2), "e": (3, 4)},
+            False,
+            None,
+            nullcontext(("4",)),
+        ),
+        (
+            "{{with a = a + 2: a}}",
+            {"a": 40},
+            False,
+            None,
+            nullcontext(("42",)),
+        ),
+        (
+            "{{with a,b = a; c=b: a+b+c}}",
+            {"a": (1, 2), "b": 1},
+            False,
+            None,
+            nullcontext(("4",)),
+        ),
+        (
+            "{{with a, b = [a, b]; c=c: a + b + c}}",
+            {"a": 40, "c": -2},
+            False,
+            None,
+            nullcontext(
+                (
+                    WithExpression(
+                        origin=Origin(position=(1, 3)),
+                        bindings=(
+                            (
+                                ("a", "b"),
+                                ListExpression(
+                                    origin=Origin(position=(1, 15)),
+                                    elements=(
+                                        ValueExpression(
+                                            origin=Origin(position=(1, 16)),
+                                            value=40,
+                                        ),
+                                        IdentifierExpression(
+                                            origin=Origin(position=(1, 19)),
+                                            identifier="b",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        expr=BinOpExpression(
+                            origin=Origin(position=(1, 28)),
+                            op="+",
+                            lhs=BinOpExpression(
+                                origin=Origin(position=(1, 28)),
+                                op="+",
+                                lhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 28)),
+                                    identifier="a",
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 32)),
+                                    identifier="b",
+                                ),
+                            ),
+                            rhs=ValueExpression(
+                                origin=Origin(position=(1, 36)),
+                                value=-2,
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
+        (
+            "{{with: c}}",
+            {},
+            False,
+            None,
+            pytest.raises(ValueError),
+        ),
+        (
+            "{{with a=b; a=c: a}}",
+            {},
+            False,
+            None,
+            pytest.raises(ValueError),
         ),
     ],
 )

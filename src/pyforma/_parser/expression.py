@@ -15,6 +15,7 @@ from pyforma._ast.expressions import (
     LambdaExpression,
     IfExpression,
     ForExpression,
+    WithExpression,
 )
 from pyforma._util import defaulted
 from .negative_lookahead import negative_lookahead
@@ -229,6 +230,44 @@ for_expression = transform_success(
     ),
 )
 
+with_expression = transform_success(
+    sequence(
+        literal("with"),
+        whitespace,
+        non_empty(
+            delimited(
+                delim=sequence(whitespace, literal(";"), whitespace),
+                content=transform_success(
+                    sequence(
+                        non_empty(
+                            delimited(
+                                delim=sequence(whitespace, literal(","), whitespace),
+                                content=identifier,
+                                allow_trailing_delim=False,
+                            )
+                        ),
+                        whitespace,
+                        literal("="),
+                        whitespace,
+                        expression,
+                    ),
+                    transform=lambda s: (s[0], s[4]),
+                ),
+                allow_trailing_delim=False,
+            )
+        ),
+        whitespace,
+        literal(":"),
+        whitespace,
+        expression,
+    ),
+    transform=lambda s, c: WithExpression(
+        origin=c.origin(),
+        bindings=s[2],
+        expr=s[6],
+    ),
+)
+
 
 simple_expression: Parser[Expression] = alternation(
     identifier_expression,
@@ -241,6 +280,7 @@ simple_expression: Parser[Expression] = alternation(
     lambda_expression,
     if_expression,
     for_expression,
+    with_expression,
     name="simple-expression",
 )
 

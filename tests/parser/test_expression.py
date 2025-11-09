@@ -11,6 +11,7 @@ from pyforma._ast import (
     ListExpression,
     IfExpression,
     ForExpression,
+    WithExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._ast.origin import Origin
@@ -731,6 +732,113 @@ _origin = Origin(position=(1, 1))
                 )
             ),
             32,
+        ),
+        (
+            "with a=40: a+2",
+            ParseSuccess(
+                result=WithExpression(
+                    origin=_origin,
+                    bindings=(
+                        (
+                            ("a",),
+                            ValueExpression(origin=Origin(position=(1, 8)), value=40),
+                        ),
+                    ),
+                    expr=BinOpExpression(
+                        origin=Origin(position=(1, 12)),
+                        op="+",
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 12)),
+                            identifier="a",
+                        ),
+                        rhs=ValueExpression(origin=Origin(position=(1, 14)), value=2),
+                    ),
+                )
+            ),
+            14,
+        ),
+        (
+            "with a, b=c: a+b",
+            ParseSuccess(
+                result=WithExpression(
+                    origin=_origin,
+                    bindings=(
+                        (
+                            ("a", "b"),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 11)),
+                                identifier="c",
+                            ),
+                        ),
+                    ),
+                    expr=BinOpExpression(
+                        origin=Origin(position=(1, 14)),
+                        op="+",
+                        lhs=IdentifierExpression(
+                            origin=Origin(position=(1, 14)),
+                            identifier="a",
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 16)),
+                            identifier="b",
+                        ),
+                    ),
+                )
+            ),
+            16,
+        ),
+        (
+            "with a, b=c; d,e = f: a+b+d+e",
+            ParseSuccess(
+                result=WithExpression(
+                    origin=_origin,
+                    bindings=(
+                        (
+                            ("a", "b"),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 11)),
+                                identifier="c",
+                            ),
+                        ),
+                        (
+                            ("d", "e"),
+                            IdentifierExpression(
+                                origin=Origin(position=(1, 20)),
+                                identifier="f",
+                            ),
+                        ),
+                    ),
+                    expr=BinOpExpression(
+                        origin=Origin(position=(1, 23)),
+                        op="+",
+                        lhs=BinOpExpression(
+                            origin=Origin(position=(1, 23)),
+                            op="+",
+                            lhs=BinOpExpression(
+                                origin=Origin(position=(1, 23)),
+                                op="+",
+                                lhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 23)),
+                                    identifier="a",
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 25)),
+                                    identifier="b",
+                                ),
+                            ),
+                            rhs=IdentifierExpression(
+                                origin=Origin(position=(1, 27)),
+                                identifier="d",
+                            ),
+                        ),
+                        rhs=IdentifierExpression(
+                            origin=Origin(position=(1, 29)),
+                            identifier="e",
+                        ),
+                    ),
+                )
+            ),
+            29,
         ),
     ],
 )
