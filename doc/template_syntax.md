@@ -41,6 +41,11 @@ PyForma expressions are a subset of Python expressions.
 - **For-Expressions**: Analogous to if expressions, for expressions also use statement syntax:
   `for identifier in expr1: expr2`. Instead of a plain identifier, the iterable can be decomposed
   immediately: `for a, b in expr1: a + b`. Neither `continue` not `break` are supported.
+- **With-Expressions**: Since the template language is not meant to introduce mutable state, and
+  therefore doesn't have assignment operators, the one way to introduce temporary names is the
+  with expression: `with name=expr1: expr2`. It can also be used to destructure values:
+  `with a, b=c: a+b`. It is possible to introduce several names in one go, by separating them via
+  `;`: `with a,b=c; d=e+4: a+b+d`
 
 The operator precedence follows Python's example.
 
