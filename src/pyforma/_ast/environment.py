@@ -22,30 +22,17 @@ class Environment(ABC):
 class TemplateEnvironment(Environment):
     """Template Environment class"""
 
-    content: tuple[str | Expression | Environment, ...]
+    content: tuple[Expression | Environment, ...]
 
     @override
     def identifiers(self) -> set[str]:
-        return set[str]().union(
-            *(
-                e.identifiers()
-                for e in self.content
-                if isinstance(e, Expression) or isinstance(e, Environment)
-            )
-        )
+        return set[str]().union(*(e.identifiers() for e in self.content))
 
     @override
     def substitute(self, variables: dict[str, Any]) -> "TemplateEnvironment":
-        def subs(
-            e: str | Expression | Environment,
-        ) -> str | Expression | Environment:
-            match e:
-                case str():
-                    return e
-                case Expression() | Environment():  # pragma: no branch
-                    return e.substitute(variables)
-
-        return TemplateEnvironment(content=tuple(subs(e) for e in self.content))
+        return TemplateEnvironment(
+            content=tuple(e.substitute(variables) for e in self.content)
+        )
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -2,6 +2,8 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import final, Any, cast, override
 
+from pyforma._ast.origin import Origin
+
 from ._ast import Expression, ValueExpression
 from ._ast.environment import TemplateEnvironment, Environment
 from ._parser import ParseContext, template, TemplateSyntaxConfig
@@ -84,7 +86,7 @@ class Template:
             renderers = ()
 
         subbed = self._content.substitute(variables).content
-        content: list[str | Expression | Environment] = []
+        content: list[Expression | Environment] = []
 
         def render(expr: ValueExpression) -> str:
             v = expr.value
@@ -95,13 +97,19 @@ class Template:
             raise ValueError(f"{expr.origin}: No renderer for value of type {type(v)}")
 
         def append_str(s: str):
-            if len(content) > 0 and isinstance(content[-1], str):
-                content[-1] += s
+            if (
+                len(content) > 0
+                and isinstance(content[-1], ValueExpression)
+                and isinstance(content[-1].value, str)
+            ):
+                content[-1] = ValueExpression(
+                    origin=content[-1].origin, value=content[-1].value + s
+                )
             else:
-                content.append(s)
+                content.append(ValueExpression(origin=Origin(position=(1, 1)), value=s))
 
         def combine_results(
-            elems: tuple[str | Expression | Environment, ...],
+            elems: tuple[Expression | Environment, ...],
         ):
             for elem in elems:
                 match elem:
@@ -113,8 +121,6 @@ class Template:
                                 append_str(render(elem))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
                         combine_results(elem.content)
-                    case str():
-                        append_str(elem)
                     case _:
                         content.append(elem)
 
@@ -150,7 +156,15 @@ class Template:
         t = self.substitute(variables, renderers=renderers)
         if len(t.unresolved_identifiers()) != 0:
             raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
-        return "".join(cast(tuple[str, ...], t._content.content))
+        match len(t._content.content):
+            case 1:
+                return cast(ValueExpression, t._content.content[0]).value
+            case 0:
+                return ""
+            case _:  # pragma: nocover
+                raise ValueError(
+                    "Internal error: Rendered templates should not have more than 1 entry!"
+                )
 
     @override
     def __eq__(self, other: Any) -> bool:

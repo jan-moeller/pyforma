@@ -7,7 +7,7 @@ from pyforma._ast.environment import (
     WithEnvironment,
     ForEnvironment,
 )
-from pyforma._ast.expressions import Expression
+from pyforma._ast.expressions import Expression, ValueExpression
 from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .until import until
@@ -89,7 +89,11 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironm
         return ParseResult[TemplateEnvironment].make_success(
             context=result.context,
             result=TemplateEnvironment(
-                content=(result.success.result[0],),
+                content=(
+                    ValueExpression(
+                        origin=context.origin(), value=result.success.result[0]
+                    ),
+                ),
             ),
         )
 
@@ -99,7 +103,7 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironm
 @cache
 def with_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[str | Expression | Environment, ...]],
+    template_parser: Parser[tuple[Expression | Environment, ...]],
 ) -> Parser[WithEnvironment]:
     parse_open = transform_success(
         sequence(
@@ -147,7 +151,7 @@ def with_environment(
 @cache
 def if_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[str | Expression | Environment, ...]],
+    template_parser: Parser[tuple[Expression | Environment, ...]],
 ) -> Parser[IfEnvironment]:
     parse_if = transform_success(
         sequence(
@@ -229,7 +233,7 @@ def if_environment(
 @cache
 def for_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[str | Expression | Environment, ...]],
+    template_parser: Parser[tuple[Expression | Environment, ...]],
 ) -> Parser[ForEnvironment]:
     parse_open = transform_success(
         sequence(
@@ -273,7 +277,7 @@ def for_environment(
 @cache
 def environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[str | Expression | Environment, ...]],
+    template_parser: Parser[tuple[Expression | Environment, ...]],
 ) -> Parser[Environment]:
     """Creates an environment parser using the provided template syntax
 

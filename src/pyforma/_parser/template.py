@@ -15,14 +15,14 @@ from .repetition import repetition
 from .parser import Parser, parser
 from .comment import comment
 from .template_syntax_config import TemplateSyntaxConfig
-from pyforma._ast.expressions import Expression
+from pyforma._ast.expressions import Expression, ValueExpression
 from pyforma._ast.environment import Environment
 
 
 @cache
 def template(
     syntax: TemplateSyntaxConfig,
-) -> Parser[tuple[str | Expression | Environment, ...]]:
+) -> Parser[tuple[Expression | Environment, ...]]:
     """Create a template parser
 
     Args:
@@ -35,15 +35,18 @@ def template(
     @parser(name="template-bit")
     def _template_bit(
         context: ParseContext,
-    ) -> ParseResult[str | Expression | Environment | None]:
+    ) -> ParseResult[Expression | Environment | None]:
         from .environment import environment
 
-        _parse_text = non_empty(
-            text(
-                syntax.comment.open,
-                syntax.expression.open,
-                syntax.environment.open,
-            )
+        _parse_text = transform_success(
+            non_empty(
+                text(
+                    syntax.comment.open,
+                    syntax.expression.open,
+                    syntax.environment.open,
+                )
+            ),
+            transform=lambda s, c: ValueExpression(origin=c.origin(), value=s),
         )
 
         return alternation(
@@ -57,7 +60,7 @@ def template(
     @parser(name="repeated-template-bit")
     def _repeated_template_bit(
         context: ParseContext,
-    ) -> ParseResult[tuple[str | Expression | Environment, ...]]:
+    ) -> ParseResult[tuple[Expression | Environment, ...]]:
         return transform_success(
             repetition(_template_bit, name=_repeated_template_bit.name),
             transform=lambda s: tuple(e for e in s if e is not None),
@@ -66,7 +69,7 @@ def template(
     @parser(name="template")
     def _template(
         context: ParseContext,
-    ) -> ParseResult[tuple[str | Expression | Environment, ...]]:
+    ) -> ParseResult[tuple[Expression | Environment, ...]]:
         result = _repeated_template_bit(context)
 
         if result.success and sequence(whitespace, eof)(result.context).is_success:
