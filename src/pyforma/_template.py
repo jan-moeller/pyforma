@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import final, Any, cast, override
 
-from ._ast import Expression, Comment, ValueExpression
+from ._ast import Expression, ValueExpression
 from ._ast.environment import TemplateEnvironment, Environment
 from ._parser import ParseContext, template, TemplateSyntaxConfig
 
@@ -64,14 +64,12 @@ class Template:
         self,
         variables: dict[str, Any],
         *,
-        keep_comments: bool = True,
         renderers: Sequence[tuple[type, Callable[[Any], str]]] | None = None,
     ) -> "Template":
         """Substitute variables into this template and return the result
 
         Args:
             variables: The variables to substitute
-            keep_comments: Whether to keep comments in the result
             renderers: Renderers to use for substitution
 
         Returns:
@@ -86,7 +84,7 @@ class Template:
             renderers = ()
 
         subbed = self._content.substitute(variables).content
-        content: list[str | Comment | Expression | Environment] = []
+        content: list[str | Expression | Environment] = []
 
         def render(expr: ValueExpression) -> str:
             v = expr.value
@@ -103,7 +101,7 @@ class Template:
                 content.append(s)
 
         def combine_results(
-            elems: tuple[str | Comment | Expression | Environment, ...],
+            elems: tuple[str | Expression | Environment, ...],
         ):
             for elem in elems:
                 match elem:
@@ -115,9 +113,6 @@ class Template:
                                 append_str(render(elem))
                     case TemplateEnvironment() if len(elem.identifiers()) == 0:
                         combine_results(elem.content)
-                    case Comment():
-                        if keep_comments:
-                            content.append(elem)
                     case str():
                         append_str(elem)
                     case _:
@@ -152,7 +147,7 @@ class Template:
         if variables is None:
             variables = {}
 
-        t = self.substitute(variables, keep_comments=False, renderers=renderers)
+        t = self.substitute(variables, renderers=renderers)
         if len(t.unresolved_identifiers()) != 0:
             raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
         return "".join(cast(tuple[str, ...], t._content.content))

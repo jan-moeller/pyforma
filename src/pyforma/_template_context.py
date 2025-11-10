@@ -95,7 +95,6 @@ class TemplateContext:
         template: Template,
         *,
         variables: dict[str, Any] | None = None,
-        keep_comments: bool = True,
         renderers: Sequence[tuple[type, Callable[[Any], str]]] | None = None,
     ) -> Template:
         """Substitute variables into this template and return the result
@@ -103,7 +102,6 @@ class TemplateContext:
         Args:
             template: The template to substitute into
             variables: The variables to substitute
-            keep_comments: Whether to keep comments in the result
             renderers: Renderers to use for substitution
 
         Returns:
@@ -115,9 +113,7 @@ class TemplateContext:
         """
         _variables = self._variables | defaulted(variables, dict[str, Any]())
         _renderers = list({*defaulted(renderers, ()), *self._renderers})
-        return template.substitute(
-            _variables, keep_comments=keep_comments, renderers=_renderers
-        )
+        return template.substitute(_variables, renderers=_renderers)
 
     def render(
         self,

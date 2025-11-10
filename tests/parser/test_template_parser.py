@@ -1,6 +1,6 @@
 import pytest
 
-from pyforma._ast import Comment, IdentifierExpression
+from pyforma._ast import IdentifierExpression
 from pyforma._parser import (
     ParseContext,
     template,
@@ -13,13 +13,12 @@ from pyforma._ast.origin import Origin
     "source,expected,remaining",
     [
         ("", (), ""),
-        ("{#bar#}baz", (Comment("bar"), "baz"), ""),
-        ("foo {#bar#}baz", ("foo ", Comment("bar"), "baz"), ""),
+        ("{#bar#}baz", ("baz",), ""),
+        ("foo {#bar#}baz", ("foo ", "baz"), ""),
         (
             "foo {#bar#}{{baz}} bam",
             (
                 "foo ",
-                Comment(text="bar"),
                 IdentifierExpression(origin=Origin(position=(1, 14)), identifier="baz"),
                 " bam",
             ),
@@ -27,7 +26,7 @@ from pyforma._ast.origin import Origin
         ),
     ],
 )
-def test_template(source: str, expected: list[str | Comment], remaining: str):
+def test_template(source: str, expected: list[str], remaining: str):
     result = template(TemplateSyntaxConfig())(ParseContext(source))
     assert result.context[:] == remaining
     assert result.success.result == expected

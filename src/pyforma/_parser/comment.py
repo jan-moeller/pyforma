@@ -6,7 +6,6 @@ from .sequence import sequence
 from .literal import literal
 from .until import until
 from .transform_result import transform_success
-from pyforma._ast import Comment
 from pyforma._util import defaulted
 
 
@@ -16,7 +15,7 @@ def comment(
     /,
     *,
     name: str | None = None,
-) -> Parser[Comment]:
+) -> Parser[None]:
     """Creates a comment parser using the provided open and close markers
 
     Args:
@@ -35,6 +34,6 @@ def comment(
             until(literal(syntax.close)),
             literal(syntax.close),
         ),
-        transform=lambda s: Comment(s[1]),
+        transform=lambda s: None,
         name=name,
     )

@@ -1,6 +1,5 @@
 import pytest
 
-from pyforma._ast import Comment
 from pyforma._parser import (
     ParseContext,
     comment,
@@ -31,10 +30,10 @@ from pyforma._parser.template_syntax_config import BlockSyntaxConfig
             ),
             0,
         ),
-        ("{#foo#}", ParseSuccess(Comment("foo")), 7),
-        ("{#foo#}bar", ParseSuccess(Comment("foo")), 7),
-        ("{# foo bar #} baz", ParseSuccess(Comment(" foo bar ")), 13),
-        ("{# foo {# bar #} #} baz", ParseSuccess(Comment(" foo {# bar ")), 16),
+        ("{#foo#}", ParseSuccess(None), 7),
+        ("{#foo#}bar", ParseSuccess(None), 7),
+        ("{# foo bar #} baz", ParseSuccess(None), 13),
+        ("{# foo {# bar #} #} baz", ParseSuccess(None), 16),
         (
             "{# foo",
             ParseFailure(
@@ -54,7 +53,7 @@ from pyforma._parser.template_syntax_config import BlockSyntaxConfig
             ),
             0,
         ),
-        ("{# {# #}", ParseSuccess(Comment(" {# ")), 8),
+        ("{# {# #}", ParseSuccess(None), 8),
     ],
 )
 def test_comment(

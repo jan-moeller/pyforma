@@ -29,7 +29,7 @@ Reports all identifiers that need to be substituted to render the template.
 
 Returns the set of all remaining identifiers in the template.
 
-### `pyforma.Template.substitute(variables, *, keep_comments, renderers) -> Template`
+### `pyforma.Template.substitute(variables, *, renderers) -> Template`
 
 Partially substitutes variables in the template and evaluates expressions that can be evaluated.
 
@@ -37,8 +37,6 @@ Partially substitutes variables in the template and evaluates expressions that c
 
 - `variables: dict[str, Any]`:  
   Dictionary mapping variable identifiers to their values.
-- `keep_comments: bool`:  
-  By default, comments are kept until the final rendering. Set to `False` to strip all comments.
 - `renderers: Sequence[tuple[type, Callable[[Any], str]]] | None`:  
   Optional sequence of renderers for stringification. By default, only `str`, `int` and `float` are
   rendered to `str` during template substitution. This argument can be used to automatically
@@ -169,7 +167,7 @@ provided via the context's defaults.
 A set of unresolved identifiers in the template without identifiers set as variables in
 this context.
 
-### `pyforma.TemplateContext.substitute(template, *, variables, keep_comments, renderers) -> Template`
+### `pyforma.TemplateContext.substitute(template, *, variables, renderers) -> Template`
 
 Substitutes variables into the provided template, additionally using the context's defaults,
 and returns the result.
@@ -180,8 +178,6 @@ and returns the result.
   The template to substitute into.
 - `variables: dict[str, Any] | None`:  
   Optional variables to substitute, in addition to the defaults.
-- `keep_comments: bool`:  
-  Optionally, whether to keep comments in the result.
 - `renderers: Sequence[tuple[type, Callable[[Any], str]]] | None`:  
   Optional renderers to use for substitution, in addition to the defaults.
 

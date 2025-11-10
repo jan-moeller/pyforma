@@ -5,7 +5,6 @@ from typing import Any, override, Annotated
 from annotated_types import MinLen
 
 from .expressions import Expression, ValueExpression
-from .comment import Comment
 from pyforma._util import destructure_value
 
 
@@ -23,7 +22,7 @@ class Environment(ABC):
 class TemplateEnvironment(Environment):
     """Template Environment class"""
 
-    content: tuple[str | Comment | Expression | Environment, ...]
+    content: tuple[str | Expression | Environment, ...]
 
     @override
     def identifiers(self) -> set[str]:
@@ -38,10 +37,10 @@ class TemplateEnvironment(Environment):
     @override
     def substitute(self, variables: dict[str, Any]) -> "TemplateEnvironment":
         def subs(
-            e: str | Comment | Expression | Environment,
-        ) -> str | Comment | Expression | Environment:
+            e: str | Expression | Environment,
+        ) -> str | Expression | Environment:
             match e:
-                case str() | Comment():
+                case str():
                     return e
                 case Expression() | Environment():  # pragma: no branch
                     return e.substitute(variables)
