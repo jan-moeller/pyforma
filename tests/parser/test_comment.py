@@ -14,31 +14,47 @@ from pyforma._parser.template_syntax_config import BlockSyntaxConfig
 @pytest.mark.parametrize(
     "source,expected,result_idx",
     [
-        ("", ParseFailure(expected='"{#"'), 0),
+        (
+            "",
+            ParseFailure(
+                expected='sequence("{#", until("#}"), "#}")',
+                cause=ParseResult(
+                    ParseFailure(
+                        expected='"{#"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"{"'),
+                            context=ParseContext(source="", index=0, position=(1, 1)),
+                        ),
+                    ),
+                    context=ParseContext(source="", index=0, position=(1, 1)),
+                ),
+            ),
+            0,
+        ),
         ("{#foo#}", ParseSuccess(Comment("foo")), 7),
         ("{#foo#}bar", ParseSuccess(Comment("foo")), 7),
         ("{# foo bar #} baz", ParseSuccess(Comment(" foo bar ")), 13),
-        ("{# foo {# bar #} #} baz", ParseSuccess(Comment(" foo {# bar #} ")), 19),
+        ("{# foo {# bar #} #} baz", ParseSuccess(Comment(" foo {# bar ")), 16),
         (
             "{# foo",
             ParseFailure(
-                expected='comment("{#", "#}")',
-                cause=ParseResult.make_failure(
-                    context=ParseContext("{# foo", index=6), expected='"#}"'
+                expected='sequence("{#", until("#}"), "#}")',
+                cause=ParseResult(
+                    ParseFailure(
+                        expected='"#}"',
+                        cause=ParseResult(
+                            ParseFailure(expected='"#"'),
+                            context=ParseContext(
+                                source="{# foo", index=6, position=(1, 7)
+                            ),
+                        ),
+                    ),
+                    context=ParseContext(source="{# foo", index=6, position=(1, 7)),
                 ),
             ),
             0,
         ),
-        (
-            "{# {# #}",
-            ParseFailure(
-                expected='comment("{#", "#}")',
-                cause=ParseResult.make_failure(
-                    context=ParseContext("{# {# #}", index=8), expected='"#}"'
-                ),
-            ),
-            0,
-        ),
+        ("{# {# #}", ParseSuccess(Comment(" {# ")), 8),
     ],
 )
 def test_comment(
