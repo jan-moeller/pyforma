@@ -1,23 +1,22 @@
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import final, Any, cast, override
+from typing import final, Any
 
-from pyforma._ast.origin import Origin
+from pyforma._ast.expressions.template_expression import TemplateExpression
 
-from ._ast import Expression, ValueExpression
-from ._ast.environment import TemplateEnvironment, Environment
+from ._ast import Expression
 from ._parser import ParseContext, template, TemplateSyntaxConfig
 
 
 @final
-class Template:
+class Template(TemplateExpression):  # pyright: ignore[reportUninitializedInstanceVariable] # This is a bug in pyright
     """Represents a templated text file and provides functionality to manipulate it"""
 
-    _default_renderers = ((str, str), (int, str), (float, str))
+    default_renderers = ((str, str), (int, str), (float, str))
 
     def __init__(
         self,
-        content: str | Path,
+        content: str | Path | Expression,
         /,
         *,
         syntax: TemplateSyntaxConfig | None = None,
@@ -32,11 +31,18 @@ class Template:
             ValueError: If the contents cannot be parsed
             OSError: If a path is passed and the file cannot be opened
         """
-        if isinstance(content, Path):
-            source_id = str(content)
-            content = content.read_text()
-        else:
-            source_id = ""
+        match content:
+            case TemplateExpression():
+                super().__init__(origin=content.origin, content=content.content)
+                return
+            case Expression():
+                super().__init__(origin=content.origin, content=(content,))
+                return
+            case Path():
+                source_id = str(content)
+                content = content.read_text()
+            case _:
+                source_id = ""
 
         if syntax is None:
             syntax = TemplateSyntaxConfig()
@@ -45,7 +51,6 @@ class Template:
         result = parse(ParseContext(source=content, source_id=source_id))
 
         if result.is_failure:
-            # TODO: improve error reporting
             exception_message = "Invalid template syntax"
             while result:
                 line, column = result.context.line_and_column()
@@ -55,12 +60,10 @@ class Template:
                 result = result.failure.cause
             raise ValueError(exception_message)
 
-        self._content = TemplateEnvironment(content=result.success.result)
-
-    def unresolved_identifiers(self) -> set[str]:
-        """Provides access to the set of unresolved identifiers in this template"""
-
-        return self._content.identifiers()
+        super().__init__(
+            origin=result.success.result.origin,
+            content=result.success.result.content,
+        )
 
     def substitute(
         self,
@@ -83,52 +86,12 @@ class Template:
         """
 
         if renderers is None:
-            renderers = ()
+            renderers = Template.default_renderers
+        else:
+            renderers = tuple(renderers) + Template.default_renderers
 
-        subbed = self._content.substitute(variables).content
-        content: list[Expression | Environment] = []
-
-        def render(expr: ValueExpression) -> str:
-            v = expr.value
-            for t, r in [*renderers, *Template._default_renderers]:
-                if isinstance(v, t):
-                    return r(v)
-
-            raise ValueError(f"{expr.origin}: No renderer for value of type {type(v)}")
-
-        def append_str(s: str):
-            if (
-                len(content) > 0
-                and isinstance(content[-1], ValueExpression)
-                and isinstance(content[-1].value, str)
-            ):
-                content[-1] = ValueExpression(
-                    origin=content[-1].origin, value=content[-1].value + s
-                )
-            else:
-                content.append(ValueExpression(origin=Origin(position=(1, 1)), value=s))
-
-        def combine_results(
-            elems: tuple[Expression | Environment, ...],
-        ):
-            for elem in elems:
-                match elem:
-                    case ValueExpression():
-                        match elem.value:
-                            case Template():
-                                combine_results(elem.value._content.content)
-                            case _:
-                                append_str(render(elem))
-                    case TemplateEnvironment() if len(elem.identifiers()) == 0:
-                        combine_results(elem.content)
-                    case _:
-                        content.append(elem)
-
-        combine_results(subbed)
-
-        result = Template("")
-        result._content = TemplateEnvironment(content=tuple(content))
-        return result
+        expr = super().simplify(variables, renderers=renderers)
+        return Template(expr)
 
     def render(
         self,
@@ -153,25 +116,15 @@ class Template:
         if variables is None:
             variables = {}
 
-        t = self.substitute(variables, renderers=renderers)
-        if len(t.unresolved_identifiers()) != 0:
-            raise ValueError(f"Unresolved identifiers: {t.unresolved_identifiers()}")
-        match len(t._content.content):
-            case 1:
-                return cast(ValueExpression, t._content.content[0]).value
-            case 0:
-                return ""
-            case _:  # pragma: nocover
-                raise ValueError(
-                    "Internal error: Rendered templates should not have more than 1 entry!"
-                )
+        if renderers is None:
+            renderers = Template.default_renderers
+        else:
+            renderers = tuple(renderers) + Template.default_renderers
 
-    @override
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Template):
-            return NotImplemented
-        return self._content == other._content
+        value = self.evaluate(variables, renderers=renderers)
 
-    @override
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._content!r})"
+        for t, r in renderers:
+            if isinstance(value, t):
+                return r(value)
+
+        raise ValueError(f"Unable to render {value}")

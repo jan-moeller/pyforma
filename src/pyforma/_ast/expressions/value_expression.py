@@ -1,3 +1,4 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import Any, override
 
@@ -11,9 +12,23 @@ class ValueExpression(Expression):
     value: Any
 
     @override
-    def identifiers(self) -> set[str]:
+    def unresolved_identifiers(self) -> set[str]:
         return set()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
         return self
+
+    @override
+    def evaluate(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Any:
+        return self.value

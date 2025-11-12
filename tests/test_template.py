@@ -12,12 +12,7 @@ from pyforma._ast import (
     IfExpression,
     ForExpression,
     WithExpression,
-)
-from pyforma._ast.environment import (
-    IfEnvironment,
-    TemplateEnvironment,
-    WithEnvironment,
-    ForEnvironment,
+    TemplateExpression,
 )
 from pyforma._ast.expressions import (
     ValueExpression,
@@ -32,6 +27,7 @@ from pyforma._ast.expressions import (
 )
 from pyforma._ast.origin import Origin
 from pyforma._parser.template_syntax_config import BlockSyntaxConfig
+from pyforma._util import join
 
 
 @final
@@ -105,7 +101,12 @@ def test_unresolved_identifiers(
 @pytest.mark.parametrize(
     "source,sub,renderers,expected",
     [  # pyright: ignore[reportUnknownArgumentType]
-        ("", {}, None, nullcontext(())),
+        (
+            "",
+            {},
+            None,
+            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value=""),)),
+        ),
         (
             "foo",
             {},
@@ -140,7 +141,7 @@ def test_unresolved_identifiers(
             {"foo": ""},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="bar"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="bar"),)
             ),
         ),
         (
@@ -149,7 +150,7 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    ValueExpression(origin=Origin(position=(1, 1)), value="42"),
+                    ValueExpression(origin=Origin(position=(1, 3)), value="42"),
                     IdentifierExpression(
                         origin=Origin(position=(1, 8)), identifier="b"
                     ),
@@ -161,20 +162,24 @@ def test_unresolved_identifiers(
             {"foo": 42, "bar": "y"},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="42y"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="42y"),)
             ),
         ),
         (
             "{#foo#}{{b}}",
             {"b": 42},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 10)), value="42"),)
+            ),
         ),
         (
             "{#foo#}{{bar}}",
             {"bar": 42},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 10)), value="42"),)
+            ),
         ),
         (
             "{#foo#}{{bar}}",
@@ -190,7 +195,7 @@ def test_unresolved_identifiers(
             {"bar": None},
             [(type(None), str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="None"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="None"),)
             ),
         ),
         (
@@ -198,7 +203,7 @@ def test_unresolved_identifiers(
             {"bar": MyString("foo")},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="foo"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="foo"),)
             ),
         ),
         (
@@ -206,26 +211,26 @@ def test_unresolved_identifiers(
             {},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="bar"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="bar"),)
             ),
         ),
         (
             "{{+a}}",
             {"a": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{-a}}",
             {"a": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="-1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="-1"),)),
         ),
         (
             "{{~a}}",
             {"a": 0b0101},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="-6"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="-6"),)),
         ),
         (
             "{{~a}}",
@@ -241,7 +246,7 @@ def test_unresolved_identifiers(
             {"a": True},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="False"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="False"),)
             ),
         ),
         (
@@ -271,58 +276,58 @@ def test_unresolved_identifiers(
             {"a": "fo"},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="fob"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="fob"),)
             ),
         ),
         (
             "{{a**b}}",
             {"a": 3, "b": 2},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="9"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="9"),)),
         ),
         (
             "{{a+b}}",
             {"a": 1, "b": 2},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="3"),)),
         ),
         (
             "{{a-b}}",
             {"a": 2, "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{a*b}}",
             {"a": 2, "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="2"),)),
         ),
         (
             "{{a/b}}",
             {"a": 1, "b": 2},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="0.5"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="0.5"),)
             ),
         ),
         (
             "{{a//b}}",
             {"a": 1, "b": 2},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="0"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="0"),)),
         ),
         (
             "{{a%b}}",
             {"a": 3, "b": 2},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{a@b}}",
             {"a": Vec(1, 2), "b": Vec(3, 4)},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="11"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="11"),)),
         ),
         (
             "{{a@b}}",
@@ -337,38 +342,38 @@ def test_unresolved_identifiers(
             "{{a<<b}}",
             {"a": 0b1, "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="2"),)),
         ),
         (
             "{{a>>b}}",
             {"a": 0b10, "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{a&b}}",
             {"a": 0b10, "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="0"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="0"),)),
         ),
         (
             "{{a^b}}",
             {"a": 0b10, "b": 0b11},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{a|b}}",
             {"a": 0b10, "b": 0b01},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="3"),)),
         ),
         (
             "{{a in b}}",
             {"a": 1, "b": []},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="False"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="False"),)
             ),
         ),
         (
@@ -376,7 +381,7 @@ def test_unresolved_identifiers(
             {"a": 2, "b": 2},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="True"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="True"),)
             ),
         ),
         (
@@ -384,7 +389,7 @@ def test_unresolved_identifiers(
             {"a": 2, "b": 2},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="False"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="False"),)
             ),
         ),
         (
@@ -392,7 +397,7 @@ def test_unresolved_identifiers(
             {"a": True, "b": False},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="False"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="False"),)
             ),
         ),
         (
@@ -400,7 +405,7 @@ def test_unresolved_identifiers(
             {"a": True, "b": False},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="True"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="True"),)
             ),
         ),
         (
@@ -408,7 +413,7 @@ def test_unresolved_identifiers(
             {"a": 1, "b": []},
             [(bool, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="True"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="True"),)
             ),
         ),
         (
@@ -442,7 +447,7 @@ def test_unresolved_identifiers(
             "{{a[0]}}",
             {"a": [1, 2]},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{a[0]}}",
@@ -458,7 +463,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2]},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1, 2]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[1, 2]"),)
             ),
         ),
         (
@@ -466,7 +471,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2]},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[2]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[2]"),)
             ),
         ),
         (
@@ -474,7 +479,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2, 3]},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[2]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[2]"),)
             ),
         ),
         (
@@ -482,7 +487,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2, 3]},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1, 2]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[1, 2]"),)
             ),
         ),
         (
@@ -490,7 +495,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2, 3]},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1, 3]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[1, 3]"),)
             ),
         ),
         (
@@ -553,7 +558,7 @@ def test_unresolved_identifiers(
             {"a": lambda: "foo"},
             None,
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="foo"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="foo"),)
             ),
         ),
         (
@@ -569,19 +574,19 @@ def test_unresolved_identifiers(
             "{{a(1)}}",
             {"a": lambda x: x + 2},  # pyright: ignore[reportUnknownLambdaType]
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="3"),)),
         ),
         (
             "{{a(x=1)}}",
             {"a": lambda x: x + 2},  # pyright: ignore[reportUnknownLambdaType]
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="3"),)),
         ),
         (
             "{{a()(1,y=2)}}",
             {"a": lambda: lambda x, y: x + y},  # pyright: ignore[reportUnknownLambdaType]
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="3"),)),
         ),
         (
             '{{a.get("b")}}',
@@ -620,25 +625,25 @@ def test_unresolved_identifiers(
             "{{len(a.keys())}}",
             {"a": {}, "len": len},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="0"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="0"),)),
         ),
         (
             "{%with a=2 %}{{a}}{%endwith%}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 16)), value="2"),)),
         ),
         (
             "{%with a=2 %}{{a}}{%endwith%}",
             {"a": 4},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 16)), value="2"),)),
         ),
         (
             "{%with a=2 %}{{a+b}}{%endwith%}",
             {"b": 4},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="6"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 16)), value="6"),)),
         ),
         (
             "{%with a=2 %}{{a+b}}{%endwith%}",
@@ -646,7 +651,8 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    TemplateEnvironment(
+                    TemplateExpression(
+                        origin=Origin(position=(1, 1)),
                         content=(
                             BinOpExpression(
                                 origin=Origin(position=(1, 16)),
@@ -660,7 +666,7 @@ def test_unresolved_identifiers(
                                     identifier="b",
                                 ),
                             ),
-                        )
+                        ),
                     ),
                 )
             ),
@@ -669,13 +675,17 @@ def test_unresolved_identifiers(
             "{%with a=b+2 %}{{a}}{%endwith%}",
             {"b": 40},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 18)), value="42"),)
+            ),
         ),
         (
             "{%with a=2; b=40 %}{{a+b}}{%endwith%}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 22)), value="42"),)
+            ),
         ),
         (
             "{%with a=b;c=d %}{{a+c}}{%endwith%}",
@@ -683,17 +693,19 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    WithEnvironment(
-                        variables=(
-                            WithEnvironment.Destructuring(
-                                identifiers=("c",),
-                                expression=IdentifierExpression(
+                    WithExpression(
+                        origin=Origin(position=(1, 1)),
+                        bindings=(
+                            (
+                                ("c",),
+                                IdentifierExpression(
                                     origin=Origin(position=(1, 14)),
                                     identifier="d",
                                 ),
                             ),
                         ),
-                        content=TemplateEnvironment(
+                        expr=TemplateExpression(
+                            origin=Origin(position=(1, 1)),
                             content=(
                                 BinOpExpression(
                                     origin=Origin(position=(1, 20)),
@@ -707,7 +719,7 @@ def test_unresolved_identifiers(
                                         identifier="c",
                                     ),
                                 ),
-                            )
+                            ),
                         ),
                     ),
                 )
@@ -717,7 +729,7 @@ def test_unresolved_identifiers(
             "{%with a,b=c %}{{a+b}}{%endwith%}",
             {"c": (1, 2)},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 18)), value="3"),)),
         ),
         (
             "{%with a,b=c;d,e=f %}{{a+b+d}}{%endwith%}",
@@ -725,17 +737,19 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    WithEnvironment(
-                        variables=(
-                            WithEnvironment.Destructuring(
-                                identifiers=("d", "e"),
-                                expression=IdentifierExpression(
+                    WithExpression(
+                        origin=Origin(position=(1, 1)),
+                        bindings=(
+                            (
+                                ("d", "e"),
+                                IdentifierExpression(
                                     origin=Origin(position=(1, 18)),
                                     identifier="f",
                                 ),
                             ),
                         ),
-                        content=TemplateEnvironment(
+                        expr=TemplateExpression(
+                            origin=Origin(position=(1, 1)),
                             content=(
                                 BinOpExpression(
                                     origin=Origin(position=(1, 24)),
@@ -749,7 +763,7 @@ def test_unresolved_identifiers(
                                         identifier="d",
                                     ),
                                 ),
-                            )
+                            ),
                         ),
                     ),
                 )
@@ -771,26 +785,31 @@ def test_unresolved_identifiers(
             "{%if a %}1{%endif%}",
             {"a": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 10)), value="1"),)),
         ),
-        ("{%if a %}1{%endif%}", {"a": False}, None, nullcontext(())),
+        (
+            "{%if a %}1{%endif%}",
+            {"a": False},
+            None,
+            nullcontext((ValueExpression(origin=Origin(position=(1, 11)), value=""),)),
+        ),
         (
             "{%if a %}1{%else%}2{%endif%}",
             {"a": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 10)), value="1"),)),
         ),
         (
             "{%if a %}1{%else%}2{%endif%}",
             {"a": False},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 19)), value="2"),)),
         ),
         (
             "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
             {"a": False, "b": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="2"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 21)), value="2"),)),
         ),
         (
             "{%if a %}1{%elif b%}2{%else%}3{%endif%}",
@@ -798,30 +817,26 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    IfEnvironment(
-                        ifs=(
+                    IfExpression(
+                        origin=Origin(position=(1, 1)),
+                        cases=(
                             (
                                 IdentifierExpression(
                                     origin=Origin(position=(1, 18)),
                                     identifier="b",
                                 ),
-                                TemplateEnvironment(
-                                    content=(
-                                        ValueExpression(
-                                            origin=Origin(position=(1, 21)),
-                                            value="2",
-                                        ),
-                                    )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 21)), value="2"
                                 ),
                             ),
-                        ),
-                        else_content=TemplateEnvironment(
-                            content=(
+                            (
                                 ValueExpression(
-                                    origin=Origin(position=(1, 30)),
-                                    value="3",
+                                    origin=Origin(position=(1, 1)), value=True
                                 ),
-                            )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 30)), value="3"
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -833,30 +848,26 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    IfEnvironment(
-                        ifs=(
+                    IfExpression(
+                        origin=Origin(position=(1, 1)),
+                        cases=(
                             (
                                 IdentifierExpression(
                                     origin=Origin(position=(1, 6)),
                                     identifier="a",
                                 ),
-                                TemplateEnvironment(
-                                    content=(
-                                        ValueExpression(
-                                            origin=Origin(position=(1, 10)),
-                                            value="1",
-                                        ),
-                                    )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 10)), value="1"
                                 ),
                             ),
-                        ),
-                        else_content=TemplateEnvironment(
-                            content=(
+                            (
                                 ValueExpression(
-                                    origin=Origin(position=(1, 30)),
-                                    value="3",
+                                    origin=Origin(position=(1, 1)), value=True
                                 ),
-                            )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 30)), value="3"
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -868,20 +879,16 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    IfEnvironment(
-                        ifs=(
+                    IfExpression(
+                        origin=Origin(position=(1, 1)),
+                        cases=(
                             (
                                 IdentifierExpression(
                                     origin=Origin(position=(1, 6)),
                                     identifier="a",
                                 ),
-                                TemplateEnvironment(
-                                    content=(
-                                        ValueExpression(
-                                            origin=Origin(position=(1, 10)),
-                                            value="1",
-                                        ),
-                                    )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 10)), value="1"
                                 ),
                             ),
                             (
@@ -889,23 +896,18 @@ def test_unresolved_identifiers(
                                     origin=Origin(position=(1, 18)),
                                     value=True,
                                 ),
-                                TemplateEnvironment(
-                                    content=(
-                                        ValueExpression(
-                                            origin=Origin(position=(1, 21)),
-                                            value="2",
-                                        ),
-                                    )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 21)), value="2"
                                 ),
                             ),
-                        ),
-                        else_content=TemplateEnvironment(
-                            content=(
+                            (
                                 ValueExpression(
-                                    origin=Origin(position=(1, 30)),
-                                    value="3",
+                                    origin=Origin(position=(1, 1)), value=True
                                 ),
-                            )
+                                ValueExpression(
+                                    origin=Origin(position=(1, 30)), value="3"
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -951,20 +953,32 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    ForEnvironment(
-                        identifier=("a",),
-                        expression=IdentifierExpression(
-                            origin=Origin(position=(1, 12)),
-                            identifier="b",
+                    CallExpression(
+                        origin=Origin(position=(1, 1)),
+                        callee=ValueExpression(
+                            origin=Origin(position=(1, 1)), value=join
                         ),
-                        content=TemplateEnvironment(
-                            content=(
-                                IdentifierExpression(
-                                    origin=Origin(position=(1, 17)),
-                                    identifier="a",
+                        arguments=(
+                            ValueExpression(origin=Origin(position=(1, 1)), value=""),
+                            ForExpression(
+                                origin=Origin(position=(1, 1)),
+                                var_names=("a",),
+                                iter_expr=IdentifierExpression(
+                                    origin=Origin(position=(1, 12)),
+                                    identifier="b",
                                 ),
-                            )
+                                expr=TemplateExpression(
+                                    origin=Origin(position=(1, 1)),
+                                    content=(
+                                        IdentifierExpression(
+                                            origin=Origin(position=(1, 17)),
+                                            identifier="a",
+                                        ),
+                                    ),
+                                ),
+                            ),
                         ),
+                        kw_arguments=(),
                     ),
                 )
             ),
@@ -994,14 +1008,14 @@ def test_unresolved_identifiers(
             "{{ [] }}",
             {},
             [(list, str)],
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="[]"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 4)), value="[]"),)),
         ),
         (
             "{{ [1] }}",
             {},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1]"),)
+                (ValueExpression(origin=Origin(position=(1, 4)), value="[1]"),)
             ),
         ),
         (
@@ -1009,7 +1023,7 @@ def test_unresolved_identifiers(
             {},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1, 2]"),)
+                (ValueExpression(origin=Origin(position=(1, 4)), value="[1, 2]"),)
             ),
         ),
         (
@@ -1035,21 +1049,21 @@ def test_unresolved_identifiers(
             {"a": 42},
             [(list, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[42]"),)
+                (ValueExpression(origin=Origin(position=(1, 4)), value="[42]"),)
             ),
         ),
         (
             "{{ {} }}",
             {},
             [(dict, str)],
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="{}"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 4)), value="{}"),)),
         ),
         (
             "{{ {1:2} }}",
             {},
             [(dict, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="{1: 2}"),)
+                (ValueExpression(origin=Origin(position=(1, 4)), value="{1: 2}"),)
             ),
         ),
         (
@@ -1059,7 +1073,7 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     ValueExpression(
-                        origin=Origin(position=(1, 1)),
+                        origin=Origin(position=(1, 4)),
                         value="{1: 2, 3: 4}",
                     ),
                 )
@@ -1118,7 +1132,7 @@ def test_unresolved_identifiers(
             {"a": "a", "b": "b"},
             [(dict, str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="{'a': 'b'}"),)
+                (ValueExpression(origin=Origin(position=(1, 4)), value="{'a': 'b'}"),)
             ),
         ),
         (
@@ -1127,14 +1141,23 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    BinOpExpression(
-                        origin=Origin(position=(1, 3)),
-                        op="+",
-                        lhs=IdentifierExpression(
-                            origin=Origin(position=(1, 3)), identifier="a"
-                        ),
-                        rhs=IdentifierExpression(
-                            origin=Origin(position=(1, 5)), identifier="b"
+                    Template(
+                        TemplateExpression(
+                            origin=Origin(position=(1, 1)),
+                            content=(
+                                BinOpExpression(
+                                    origin=Origin(position=(1, 3)),
+                                    op="+",
+                                    lhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 3)),
+                                        identifier="a",
+                                    ),
+                                    rhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 5)),
+                                        identifier="b",
+                                    ),
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -1146,15 +1169,24 @@ def test_unresolved_identifiers(
             None,
             nullcontext(
                 (
-                    BinOpExpression(
-                        origin=Origin(position=(1, 3)),
-                        op="+",
-                        lhs=IdentifierExpression(
-                            origin=Origin(position=(1, 3)), identifier="a"
-                        ),
-                        rhs=IdentifierExpression(
-                            origin=Origin(position=(1, 5)), identifier="b"
-                        ),
+                    Template(
+                        TemplateExpression(
+                            origin=Origin(position=(1, 1)),
+                            content=(
+                                BinOpExpression(
+                                    origin=Origin(position=(1, 3)),
+                                    op="+",
+                                    lhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 3)),
+                                        identifier="a",
+                                    ),
+                                    rhs=IdentifierExpression(
+                                        origin=Origin(position=(1, 5)),
+                                        identifier="b",
+                                    ),
+                                ),
+                            ),
+                        )
                     ),
                 )
             ),
@@ -1164,50 +1196,62 @@ def test_unresolved_identifiers(
             {"t": Template("{{t}}")},
             None,
             nullcontext(
-                (IdentifierExpression(origin=Origin(position=(1, 3)), identifier="t"),)
+                (
+                    Template(
+                        TemplateExpression(
+                            origin=Origin(position=(1, 1)),
+                            content=(
+                                IdentifierExpression(
+                                    origin=Origin(position=(1, 3)),
+                                    identifier="t",
+                                ),
+                            ),
+                        )
+                    ),
+                )
             ),
         ),
         (
             "{{(lambda: 42)()}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x: 40 + x)(2)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x: 40 + x)(x=2)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x, y: x + y)(2, 40)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x, y: x + y)(2, y=40)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x, y: x + y)(x=2, y=40)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x, y: 42)(0, 0)}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         ("{{(lambda x, y: x + y)()}}", {}, None, pytest.raises(TypeError)),
         ("{{(lambda x: x)(1, x=2)}}", {}, None, pytest.raises(TypeError)),
@@ -1248,45 +1292,49 @@ def test_unresolved_identifiers(
             "{{(lambda x: x + y)(1)}}",
             {"y": 41},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="42"),)),
         ),
         (
             "{{(lambda x: x)(1)}}",
             {"x": 42},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 3)), value="1"),)),
         ),
         (
             "{{if True: 42}}",
             {},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 12)), value="42"),)
+            ),
         ),
         (
             "{{if False: 42}}",
             {},
             [(type(None), str)],
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="None"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="None"),)
             ),
         ),
         (
             "{{if a: 42 else: 40}}",
             {"a": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 9)), value="42"),)),
         ),
         (
             "{{if a: 42 else: 40}}",
             {"a": False},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="40"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 18)), value="40"),)
+            ),
         ),
         (
             "{{if a: 42 elif b: 41 else: 40}}",
             {"a": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 9)), value="42"),)),
         ),
         (
             "{{if a: 42 elif b: 41 else: 40}}",
@@ -1319,20 +1367,24 @@ def test_unresolved_identifiers(
                             ),
                         ),
                     ),
-                ),
+                )
             ),
         ),
         (
             "{{if a: 42 elif b: 41 else: 40}}",
             {"a": False, "b": True},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="41"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 20)), value="41"),)
+            ),
         ),
         (
             "{{if a: 42 elif b: 41 else: 40}}",
             {"a": False, "b": False},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="40"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 29)), value="40"),)
+            ),
         ),
         (
             "{{if a: 42 elif b: 41 else: 40}}",
@@ -1373,7 +1425,7 @@ def test_unresolved_identifiers(
             {"b": [1, 2]},
             {(list, str)},
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[1, 2]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[1, 2]"),)
             ),
         ),
         (
@@ -1381,7 +1433,7 @@ def test_unresolved_identifiers(
             {"c": [(1, 2), (3, 4)]},
             {(list, str)},
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[3, 7]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[3, 7]"),)
             ),
         ),
         (
@@ -1389,7 +1441,7 @@ def test_unresolved_identifiers(
             {"a": [1, 2]},
             {(list, str)},
             nullcontext(
-                (ValueExpression(origin=Origin(position=(1, 1)), value="[3, 4]"),)
+                (ValueExpression(origin=Origin(position=(1, 3)), value="[3, 4]"),)
             ),
         ),
         (
@@ -1499,37 +1551,39 @@ def test_unresolved_identifiers(
             "{{with a=c: a}}",
             {"c": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="1"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 13)), value="1"),)),
         ),
         (
             "{{with a,b=c: a+b}}",
             {"c": (1, 2)},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="3"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 15)), value="3"),)),
         ),
         (
             "{{with a,b=c: a+b+d}}",
             {"c": (1, 2), "d": 3},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="6"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 15)), value="6"),)),
         ),
         (
             "{{with a , b = c ; c , d = e: a+c}}",
             {"c": (1, 2), "e": (3, 4)},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="4"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 31)), value="4"),)),
         ),
         (
             "{{with a = a + 2: a}}",
             {"a": 40},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="42"),)),
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 19)), value="42"),)
+            ),
         ),
         (
             "{{with a,b = a; c=b: a+b+c}}",
             {"a": (1, 2), "b": 1},
             None,
-            nullcontext((ValueExpression(origin=Origin(position=(1, 1)), value="4"),)),
+            nullcontext((ValueExpression(origin=Origin(position=(1, 22)), value="4"),)),
         ),
         (
             "{{with a, b = [a, b]; c=c: a + b + c}}",
@@ -1593,13 +1647,7 @@ def test_substitute(
 ):
     with expected as e:
         t = Template(source)
-        assert (
-            t.substitute(
-                sub,
-                renderers=renderers,
-            )._content.content  # pyright: ignore[reportPrivateUsage]
-            == e
-        )
+        assert t.substitute(sub, renderers=renderers).content == e
 
 
 @pytest.mark.parametrize(
@@ -1639,7 +1687,7 @@ def test_init_with_custom_syntax():
 def test_init_from_path(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(Path, "read_text", lambda self: "mocked")  # pyright: ignore[reportUnknownArgumentType,reportUnknownLambdaType]
 
-    assert Template(Path())._content.content == (  # pyright: ignore[reportPrivateUsage]
+    assert Template(Path()).content == (
         ValueExpression(origin=Origin(position=(1, 1), source_id="."), value="mocked"),
     )
 
@@ -1656,7 +1704,8 @@ def test_eq():
 
 
 def test_repr():
-    assert (
-        repr(Template("{{foo}}"))
-        == "Template(TemplateEnvironment(content=(IdentifierExpression(origin=Origin(position=(1, 3), source_id=''), identifier='foo'),)))"
+    assert repr(Template("{{foo}}")) == (
+        "Template(origin=Origin(position=(1, 1), source_id=''), "
+        "content=(IdentifierExpression(origin=Origin(position=(1, 3), source_id=''), "
+        "identifier='foo'),))"
     )
