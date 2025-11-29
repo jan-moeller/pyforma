@@ -17,8 +17,10 @@ class CallExpression(ExpressionImpl):
 
     @override
     def unresolved_identifiers(self) -> set[str]:
-        return self.callee.unresolved_identifiers().union(
-            *[arg.unresolved_identifiers() for arg in self.arguments]
+        return (
+            self.callee.unresolved_identifiers()
+            .union(*[arg.unresolved_identifiers() for arg in self.arguments])
+            .union(*[arg.unresolved_identifiers() for _, arg in self.kw_arguments])
         )
 
     @override
