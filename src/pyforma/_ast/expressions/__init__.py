@@ -12,3 +12,4 @@ from .lambda_expression import LambdaExpression as LambdaExpression
 from .if_expression import IfExpression as IfExpression
 from .for_expression import ForExpression as ForExpression
 from .with_expression import WithExpression as WithExpression
+from .template_expression import TemplateExpression as TemplateExpression

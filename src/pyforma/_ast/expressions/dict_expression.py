@@ -1,27 +1,38 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import override, Any, cast
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class DictExpression(Expression):
+class DictExpression(ExpressionImpl):
     """Dictionary expression"""
 
     elements: tuple[tuple[Expression, Expression], ...]
 
     @override
-    def identifiers(self) -> set[str]:
+    def unresolved_identifiers(self) -> set[str]:
         return set[str]().union(
-            *(e[0].identifiers() for e in self.elements),
-            *(e[1].identifiers() for e in self.elements),
+            *(e[0].unresolved_identifiers() for e in self.elements),
+            *(e[1].unresolved_identifiers() for e in self.elements),
         )
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
         _elements = tuple(
-            (k.substitute(variables), v.substitute(variables)) for k, v in self.elements
+            (
+                k.simplify(variables, renderers=renderers),
+                v.simplify(variables, renderers=renderers),
+            )
+            for k, v in self.elements
         )
 
         if all(

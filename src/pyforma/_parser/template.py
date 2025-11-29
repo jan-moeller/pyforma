@@ -15,14 +15,14 @@ from .repetition import repetition
 from .parser import Parser, parser
 from .comment import comment
 from .template_syntax_config import TemplateSyntaxConfig
-from pyforma._ast.expressions import Expression, ValueExpression
-from pyforma._ast.environment import Environment
+from pyforma._ast.expressions import Expression, ValueExpression, TemplateExpression
+from pyforma._ast.origin import Origin
 
 
 @cache
 def template(
     syntax: TemplateSyntaxConfig,
-) -> Parser[tuple[Expression | Environment, ...]]:
+) -> Parser[TemplateExpression]:
     """Create a template parser
 
     Args:
@@ -35,7 +35,7 @@ def template(
     @parser(name="template-bit")
     def _template_bit(
         context: ParseContext,
-    ) -> ParseResult[Expression | Environment | None]:
+    ) -> ParseResult[Expression | None]:
         from .environment import environment
 
         _parse_text = transform_success(
@@ -60,7 +60,7 @@ def template(
     @parser(name="repeated-template-bit")
     def _repeated_template_bit(
         context: ParseContext,
-    ) -> ParseResult[tuple[Expression | Environment, ...]]:
+    ) -> ParseResult[tuple[Expression, ...]]:
         return transform_success(
             repetition(_template_bit, name=_repeated_template_bit.name),
             transform=lambda s: tuple(e for e in s if e is not None),
@@ -69,7 +69,7 @@ def template(
     @parser(name="template")
     def _template(
         context: ParseContext,
-    ) -> ParseResult[tuple[Expression | Environment, ...]]:
+    ) -> ParseResult[tuple[Expression, ...]]:
         result = _repeated_template_bit(context)
 
         if result.success and sequence(whitespace, eof)(result.context).is_success:
@@ -81,4 +81,9 @@ def template(
             cause=_template_bit(t.context),
         )
 
-    return _template
+    return transform_success(
+        _template,
+        transform=lambda s, c: TemplateExpression(
+            origin=Origin(position=(1, 1)), content=s
+        ),
+    )

@@ -1,12 +1,14 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import Literal, override, Any
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class BinOpExpression(Expression):
+class BinOpExpression(ExpressionImpl):
     """Binary operator expression"""
 
     type OpType = Literal[
@@ -40,13 +42,18 @@ class BinOpExpression(Expression):
     rhs: Expression
 
     @override
-    def identifiers(self) -> set[str]:
-        return self.lhs.identifiers() | self.rhs.identifiers()
+    def unresolved_identifiers(self) -> set[str]:
+        return self.lhs.unresolved_identifiers() | self.rhs.unresolved_identifiers()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
-        lhs = self.lhs.substitute(variables)
-        rhs = self.rhs.substitute(variables)
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
+        lhs = self.lhs.simplify(variables, renderers=renderers)
+        rhs = self.rhs.simplify(variables, renderers=renderers)
         if isinstance(lhs, ValueExpression) and isinstance(rhs, ValueExpression):
             try:
                 match self.op:

@@ -6,6 +6,9 @@ import pytest
 from pytest_mock import MockerFixture
 
 from pyforma import DefaultTemplateContext, Template, TemplateContext
+from pyforma._ast import ValueExpression
+from pyforma._ast.expressions.template_expression import TemplateExpression
+from pyforma._ast.origin import Origin
 
 
 def test_load_template(mocker: MockerFixture) -> None:
@@ -59,10 +62,43 @@ def test_unresolved_identifiers(
 @pytest.mark.parametrize(
     "variables,template,expected",
     [
-        (None, Template(""), Template("")),
-        (None, Template("{{min(1, 2)}}"), Template("1")),
+        (
+            None,
+            Template(""),
+            Template(
+                TemplateExpression(
+                    origin=Origin(position=(1, 1)),
+                    content=(
+                        ValueExpression(origin=Origin(position=(1, 1)), value=""),
+                    ),
+                )
+            ),
+        ),
+        (
+            None,
+            Template("{{min(1, 2)}}"),
+            Template(
+                TemplateExpression(
+                    origin=Origin(position=(1, 3)),
+                    content=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value="1"),
+                    ),
+                )
+            ),
+        ),
         (None, Template("{{foo}}"), Template("{{foo}}")),
-        (dict(foo="foo"), Template("{{foo}}"), Template("foo")),
+        (
+            dict(foo="foo"),
+            Template("{{foo}}"),
+            Template(
+                TemplateExpression(
+                    origin=Origin(position=(1, 3)),
+                    content=(
+                        ValueExpression(origin=Origin(position=(1, 3)), value="foo"),
+                    ),
+                )
+            ),
+        ),
     ],
 )
 def test_substitute(

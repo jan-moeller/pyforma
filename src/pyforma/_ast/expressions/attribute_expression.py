@@ -1,24 +1,31 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import override, Any
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class AttributeExpression(Expression):
+class AttributeExpression(ExpressionImpl):
     """Attribute expression"""
 
     object: Expression
     attribute: str
 
     @override
-    def identifiers(self) -> set[str]:
-        return self.object.identifiers()
+    def unresolved_identifiers(self) -> set[str]:
+        return self.object.unresolved_identifiers()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
-        object = self.object.substitute(variables)
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
+        object = self.object.simplify(variables, renderers=renderers)
         attribute = self.attribute
 
         if isinstance(object, ValueExpression):

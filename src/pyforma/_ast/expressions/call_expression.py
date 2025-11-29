@@ -1,12 +1,14 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import cast, override, Any
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class CallExpression(Expression):
+class CallExpression(ExpressionImpl):
     """Call expression"""
 
     callee: Expression
@@ -14,17 +16,25 @@ class CallExpression(Expression):
     kw_arguments: tuple[tuple[str, Expression], ...]
 
     @override
-    def identifiers(self) -> set[str]:
-        return self.callee.identifiers().union(
-            *[arg.identifiers() for arg in self.arguments]
+    def unresolved_identifiers(self) -> set[str]:
+        return self.callee.unresolved_identifiers().union(
+            *[arg.unresolved_identifiers() for arg in self.arguments]
         )
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
-        callee = self.callee.substitute(variables)
-        arguments = tuple(arg.substitute(variables) for arg in self.arguments)
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
+        callee = self.callee.simplify(variables, renderers=renderers)
+        arguments = tuple(
+            arg.simplify(variables, renderers=renderers) for arg in self.arguments
+        )
         kw_arguments = tuple(
-            (iden, arg.substitute(variables)) for iden, arg in self.kw_arguments
+            (iden, arg.simplify(variables, renderers=renderers))
+            for iden, arg in self.kw_arguments
         )
 
         callee_ready = isinstance(callee, ValueExpression)

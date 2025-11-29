@@ -1,28 +1,36 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import override, Any
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class LambdaExpression(Expression):
+class LambdaExpression(ExpressionImpl):
     """Lambda expression"""
 
     parameters: tuple[str, ...]
     return_value: Expression
 
     @override
-    def identifiers(self) -> set[str]:
-        return self.return_value.identifiers() - set(self.parameters)
+    def unresolved_identifiers(self) -> set[str]:
+        return self.return_value.unresolved_identifiers() - set(self.parameters)
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
-        value = self.return_value.substitute(
-            {k: v for k, v in variables.items() if k not in self.parameters}
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
+        value = self.return_value.simplify(
+            {k: v for k, v in variables.items() if k not in self.parameters},
+            renderers=renderers,
         )
 
-        if value.identifiers().issubset(self.parameters):
+        if value.unresolved_identifiers().issubset(self.parameters):
 
             def fn(*args: Any, **kwargs: Any) -> Any:
                 msg = f"{self.origin}: Invalid call of lambda expression with arguments {args} and {kwargs}"
@@ -34,7 +42,7 @@ class LambdaExpression(Expression):
                 kwargs |= args_mapped
 
                 try:
-                    result = value.substitute(kwargs)
+                    result = value.simplify(kwargs, renderers=renderers)
                     if isinstance(result, ValueExpression):
                         return result.value
                 except Exception as ex:

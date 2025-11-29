@@ -1,24 +1,31 @@
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import Literal, override, Any
 
 from .expression import Expression
+from .expression_impl import ExpressionImpl
 from .value_expression import ValueExpression
 
 
 @dataclass(frozen=True, kw_only=True)
-class UnOpExpression(Expression):
+class UnOpExpression(ExpressionImpl):
     """Unary operator expression"""
 
     op: Literal["+", "-", "~", "not"]
     operand: Expression
 
     @override
-    def identifiers(self) -> set[str]:
-        return self.operand.identifiers()
+    def unresolved_identifiers(self) -> set[str]:
+        return self.operand.unresolved_identifiers()
 
     @override
-    def substitute(self, variables: dict[str, Any]) -> Expression:
-        operand = self.operand.substitute(variables)
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Expression:
+        operand = self.operand.simplify(variables, renderers=renderers)
         if isinstance(operand, ValueExpression):
             try:
                 match self.op:

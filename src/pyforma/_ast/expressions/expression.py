@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,7 +13,20 @@ class Expression(ABC):
     origin: Origin
 
     @abstractmethod
-    def identifiers(self) -> set[str]: ...
+    def unresolved_identifiers(self) -> set[str]: ...
 
     @abstractmethod
-    def substitute(self, variables: dict[str, Any]) -> "Expression": ...
+    def simplify(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> "Expression": ...
+
+    @abstractmethod
+    def evaluate(
+        self,
+        variables: dict[str, Any],
+        *,
+        renderers: Sequence[tuple[type, Callable[[Any], str]]],
+    ) -> Any: ...

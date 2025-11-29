@@ -1,6 +1,6 @@
 import pytest
 
-from pyforma._ast import IdentifierExpression, ValueExpression
+from pyforma._ast import IdentifierExpression, ValueExpression, TemplateExpression
 from pyforma._parser import (
     ParseContext,
     template,
@@ -12,26 +12,37 @@ from pyforma._ast.origin import Origin
 @pytest.mark.parametrize(
     "source,expected,remaining",
     [
-        ("", (), ""),
+        ("", TemplateExpression(origin=Origin(position=(1, 1)), content=()), ""),
         (
             "{#bar#}baz",
-            (ValueExpression(origin=Origin(position=(1, 8)), value="baz"),),
+            TemplateExpression(
+                origin=Origin(position=(1, 1)),
+                content=(ValueExpression(origin=Origin(position=(1, 8)), value="baz"),),
+            ),
             "",
         ),
         (
             "foo {#bar#}baz",
-            (
-                ValueExpression(origin=Origin(position=(1, 1)), value="foo "),
-                ValueExpression(origin=Origin(position=(1, 12)), value="baz"),
+            TemplateExpression(
+                origin=Origin(position=(1, 1)),
+                content=(
+                    ValueExpression(origin=Origin(position=(1, 1)), value="foo "),
+                    ValueExpression(origin=Origin(position=(1, 12)), value="baz"),
+                ),
             ),
             "",
         ),
         (
             "foo {#bar#}{{baz}} bam",
-            (
-                ValueExpression(origin=Origin(position=(1, 1)), value="foo "),
-                IdentifierExpression(origin=Origin(position=(1, 14)), identifier="baz"),
-                ValueExpression(origin=Origin(position=(1, 19)), value=" bam"),
+            TemplateExpression(
+                origin=Origin(position=(1, 1)),
+                content=(
+                    ValueExpression(origin=Origin(position=(1, 1)), value="foo "),
+                    IdentifierExpression(
+                        origin=Origin(position=(1, 14)), identifier="baz"
+                    ),
+                    ValueExpression(origin=Origin(position=(1, 19)), value=" bam"),
+                ),
             ),
             "",
         ),

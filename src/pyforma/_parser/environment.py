@@ -1,13 +1,12 @@
 from functools import cache
 
-from pyforma._ast.environment import (
-    Environment,
-    IfEnvironment,
-    TemplateEnvironment,
-    WithEnvironment,
-    ForEnvironment,
+from pyforma._ast.expressions import (
+    Expression,
+    ValueExpression,
+    WithExpression,
+    TemplateExpression,
 )
-from pyforma._ast.expressions import Expression, ValueExpression
+from pyforma._ast.expressions.call_expression import CallExpression
 from .parse_context import ParseContext
 from .parse_result import ParseResult
 from .until import until
@@ -24,6 +23,8 @@ from .transform_result import transform_success
 from .expression import expression
 from .parser import Parser, parser
 from .template_syntax_config import TemplateSyntaxConfig
+from .._ast import IfExpression, ForExpression
+from pyforma._util import join
 
 _destructuring = delimited(
     delim=sequence(whitespace, literal(","), whitespace),
@@ -33,7 +34,7 @@ _destructuring = delimited(
 
 
 @cache
-def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironment]:
+def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[ValueExpression]:
     parse_open = transform_success(
         sequence(
             literal(syntax.environment.open),
@@ -52,10 +53,10 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironm
     )
 
     @parser
-    def parse_literal_env(context: ParseContext) -> ParseResult[TemplateEnvironment]:
+    def parse_literal_env(context: ParseContext) -> ParseResult[ValueExpression]:
         iden = parse_open(context)
         if iden.is_failure:
-            return ParseResult[TemplateEnvironment].make_failure(
+            return ParseResult.make_failure(
                 context=context,
                 expected="literal environment",
                 cause=iden,
@@ -86,14 +87,11 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironm
         parse = sequence(parse_content, parse_close, name="literal-environment")
         result = parse(iden.context)
 
-        return ParseResult[TemplateEnvironment].make_success(
+        return ParseResult[ValueExpression].make_success(
             context=result.context,
-            result=TemplateEnvironment(
-                content=(
-                    ValueExpression(
-                        origin=context.origin(), value=result.success.result[0]
-                    ),
-                ),
+            result=ValueExpression(
+                origin=context.origin(),
+                value=result.success.result[0],
             ),
         )
 
@@ -103,8 +101,8 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[TemplateEnvironm
 @cache
 def with_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression | Environment, ...]],
-) -> Parser[WithEnvironment]:
+    template_parser: Parser[tuple[Expression, ...]],
+) -> Parser[WithExpression]:
     parse_open = transform_success(
         sequence(
             literal(syntax.environment.open),
@@ -141,9 +139,10 @@ def with_environment(
 
     return transform_success(
         parse,
-        transform=lambda s: WithEnvironment(
-            variables=tuple(WithEnvironment.Destructuring(e[0], e[1]) for e in s[0]),
-            content=TemplateEnvironment(content=s[1]),
+        transform=lambda s, c: WithExpression(
+            origin=c.origin(),
+            bindings=tuple((e[0], e[1]) for e in s[0]),
+            expr=TemplateExpression(origin=c.origin(), content=s[1]),
         ),
     )
 
@@ -151,8 +150,8 @@ def with_environment(
 @cache
 def if_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression | Environment, ...]],
-) -> Parser[IfEnvironment]:
+    template_parser: Parser[tuple[Expression, ...]],
+) -> Parser[IfExpression]:
     parse_if = transform_success(
         sequence(
             literal(syntax.environment.open),
@@ -205,15 +204,15 @@ def if_environment(
             repetition(sequence(parse_elif, template_parser)),
             transform_success(
                 option(sequence(parse_else, template_parser)),
-                transform=lambda s: TemplateEnvironment(content=())
+                transform=lambda s, c: TemplateExpression(origin=c.origin(), content=())
                 if s is None
-                else TemplateEnvironment(content=s[1]),
+                else TemplateExpression(origin=c.origin(), content=s[1]),
             ),
             parse_close,
         ),
-        transform=lambda s: (
+        transform=lambda s, c: (
             tuple(
-                (expr, TemplateEnvironment(content=templ))
+                (expr, TemplateExpression(origin=c.origin(), content=templ))
                 for expr, templ in ((s[0], s[1]), *s[2])
             ),
             s[3],
@@ -223,9 +222,9 @@ def if_environment(
 
     return transform_success(
         parse,
-        transform=lambda s: IfEnvironment(
-            ifs=s[0],
-            else_content=s[1],
+        transform=lambda s, c: IfExpression(
+            origin=c.origin(),
+            cases=(*s[0], (ValueExpression(origin=c.origin(), value=True), s[1])),
         ),
     )
 
@@ -233,8 +232,8 @@ def if_environment(
 @cache
 def for_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression | Environment, ...]],
-) -> Parser[ForEnvironment]:
+    template_parser: Parser[tuple[Expression, ...]],
+) -> Parser[Expression]:
     parse_open = transform_success(
         sequence(
             literal(syntax.environment.open),
@@ -266,10 +265,19 @@ def for_environment(
 
     return transform_success(
         parse,
-        transform=lambda s: ForEnvironment(
-            identifier=s[0][0],
-            expression=s[0][1],
-            content=TemplateEnvironment(content=s[1]),
+        transform=lambda s, c: CallExpression(
+            origin=c.origin(),
+            callee=ValueExpression(origin=c.origin(), value=join),
+            arguments=(
+                ValueExpression(origin=c.origin(), value=""),
+                ForExpression(
+                    origin=c.origin(),
+                    var_names=s[0][0],
+                    iter_expr=s[0][1],
+                    expr=TemplateExpression(origin=c.origin(), content=s[1]),
+                ),
+            ),
+            kw_arguments=(),
         ),
     )
 
@@ -277,8 +285,8 @@ def for_environment(
 @cache
 def environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression | Environment, ...]],
-) -> Parser[Environment]:
+    template_parser: Parser[tuple[Expression, ...]],
+) -> Parser[Expression]:
     """Creates an environment parser using the provided template syntax
 
     Args:
