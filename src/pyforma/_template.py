@@ -122,9 +122,6 @@ class Template(TemplateExpression):  # pyright: ignore[reportUninitializedInstan
             renderers = tuple(renderers) + Template.default_renderers
 
         value = self.evaluate(variables, renderers=renderers)
-
-        for t, r in renderers:
-            if isinstance(value, t):
-                return r(value)
-
-        raise ValueError(f"Unable to render {value}")
+        # TemplateExpression.evaluate always returns a str
+        assert isinstance(value, str)
+        return value
