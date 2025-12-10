@@ -1,5 +1,6 @@
 import pytest
 
+from pyforma import TemplateSyntaxConfig
 from pyforma._ast import (
     IdentifierExpression,
     ValueExpression,
@@ -12,11 +13,13 @@ from pyforma._ast import (
     IfExpression,
     ForExpression,
     WithExpression,
+    TemplateExpression,
 )
 from pyforma._parser.parse_context import ParseContext
 from pyforma._ast.origin import Origin
 from pyforma._parser.expression import expression, _none_expr  # pyright: ignore[reportPrivateUsage]
 from pyforma._parser.parse_result import ParseFailure, ParseSuccess
+from pyforma._parser.template import inner_template
 
 _origin = Origin(position=(1, 1))
 
@@ -840,6 +843,53 @@ _origin = Origin(position=(1, 1))
             ),
             29,
         ),
+        (
+            "```foo{{a}}bar```",
+            ParseSuccess(
+                result=TemplateExpression(
+                    origin=Origin(position=(1, 4)),
+                    content=(
+                        ValueExpression(origin=Origin(position=(1, 4)), value="foo"),
+                        IdentifierExpression(
+                            origin=Origin(position=(1, 9)), identifier="a"
+                        ),
+                        ValueExpression(origin=Origin(position=(1, 12)), value="bar"),
+                    ),
+                )
+            ),
+            17,
+        ),
+        (
+            "```foo{{```abc```}}bar```",
+            ParseSuccess(
+                result=TemplateExpression(
+                    origin=Origin(position=(1, 4)),
+                    content=(
+                        ValueExpression(origin=Origin(position=(1, 4)), value="foo"),
+                        TemplateExpression(
+                            origin=Origin(position=(1, 12)),
+                            content=(
+                                ValueExpression(
+                                    origin=Origin(position=(1, 12)), value="abc"
+                                ),
+                            ),
+                        ),
+                        ValueExpression(origin=Origin(position=(1, 20)), value="bar"),
+                    ),
+                )
+            ),
+            25,
+        ),
+        (
+            "``````",
+            ParseSuccess(
+                result=TemplateExpression(
+                    origin=Origin(position=(1, 4)),
+                    content=(),
+                )
+            ),
+            6,
+        ),
     ],
 )
 def test_expression(
@@ -848,7 +898,8 @@ def test_expression(
     result_idx: int,
 ):
     context = ParseContext(source)
-    result = expression(context)
+    syntax = TemplateSyntaxConfig()
+    result = expression(inner_template(syntax))(context)
     assert type(result.value) is type(expected)
     assert result.value == expected
     if isinstance(expected, ParseSuccess):

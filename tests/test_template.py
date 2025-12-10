@@ -89,6 +89,9 @@ class SizedNotIterable(Sized):
         ("{{with a,b=c: a}}", {"c"}),
         ("{{with a, b=b: a}}", {"b"}),
         ("{{with a, b=c; d,e=f: a}}", {"c", "f"}),
+        ("{{```asd```}}", set()),
+        ("{{```{{a+b}}```}}", {"a", "b"}),
+        ("{{```{{```{{a}}```}}```}}", {"a"}),
     ],
 )
 def test_unresolved_identifiers(
@@ -189,6 +192,12 @@ def test_unresolved_identifiers(
                 ValueError,
                 match=":1:10: No renderer for value of type <class 'NoneType'>",
             ),
+        ),
+        (
+            "{#foo",
+            {},
+            None,
+            pytest.raises(ValueError),
         ),
         (
             "{{bar}}",
@@ -652,7 +661,7 @@ def test_unresolved_identifiers(
             nullcontext(
                 (
                     TemplateExpression(
-                        origin=Origin(position=(1, 1)),
+                        origin=Origin(position=(1, 14)),
                         content=(
                             BinOpExpression(
                                 origin=Origin(position=(1, 16)),
@@ -705,7 +714,7 @@ def test_unresolved_identifiers(
                             ),
                         ),
                         expr=TemplateExpression(
-                            origin=Origin(position=(1, 1)),
+                            origin=Origin(position=(1, 18)),
                             content=(
                                 BinOpExpression(
                                     origin=Origin(position=(1, 20)),
@@ -749,7 +758,7 @@ def test_unresolved_identifiers(
                             ),
                         ),
                         expr=TemplateExpression(
-                            origin=Origin(position=(1, 1)),
+                            origin=Origin(position=(1, 22)),
                             content=(
                                 BinOpExpression(
                                     origin=Origin(position=(1, 24)),
@@ -968,7 +977,7 @@ def test_unresolved_identifiers(
                                     identifier="b",
                                 ),
                                 expr=TemplateExpression(
-                                    origin=Origin(position=(1, 1)),
+                                    origin=Origin(position=(1, 15)),
                                     content=(
                                         IdentifierExpression(
                                             origin=Origin(position=(1, 17)),
@@ -1637,6 +1646,64 @@ def test_unresolved_identifiers(
         ),
         ("{{with: c}}", {}, None, pytest.raises(ValueError)),
         ("{{with a=b; a=c: a}}", {}, None, pytest.raises(ValueError)),
+        (
+            "{{```foo```}}",
+            {},
+            None,
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 6)), value="foo"),)
+            ),
+        ),
+        (
+            "{{```foo{{a+b}}bar```}}",
+            {"a": "bar", "b": "foo"},
+            None,
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 6)), value="foobarfoobar"),)
+            ),
+        ),
+        (
+            "{{```{{a}}foo```+```bar{{b}}```}}",
+            {"a": "bar", "b": "foo"},
+            None,
+            nullcontext(
+                (ValueExpression(origin=Origin(position=(1, 3)), value="barfoobarfoo"),)
+            ),
+        ),
+        (
+            "{{```foo{{a+b}}bar```}}",
+            {"a": "bar"},
+            None,
+            nullcontext(
+                (
+                    TemplateExpression(
+                        origin=Origin(position=(1, 6)),
+                        content=(
+                            ValueExpression(
+                                origin=Origin(position=(1, 6)),
+                                value="foo",
+                            ),
+                            BinOpExpression(
+                                origin=Origin(position=(1, 11)),
+                                op="+",
+                                lhs=ValueExpression(
+                                    origin=Origin(position=(1, 11)),
+                                    value="bar",
+                                ),
+                                rhs=IdentifierExpression(
+                                    origin=Origin(position=(1, 13)),
+                                    identifier="b",
+                                ),
+                            ),
+                            ValueExpression(
+                                origin=Origin(position=(1, 16)),
+                                value="bar",
+                            ),
+                        ),
+                    ),
+                )
+            ),
+        ),
     ],
 )
 def test_substitute(
@@ -1662,6 +1729,9 @@ def test_substitute(
         ("{{foo}}{{bar}}", {"foo": 42}, pytest.raises(ValueError)),
         ("{{foo}}{{bar}}", {"foo": 42, "bar": "y"}, nullcontext("42y")),
         ("{#foo#}{{bar}}", {"bar": 42}, nullcontext("42")),
+        ("{{``````}}", {}, nullcontext("")),
+        ("{{```a{{b}}c```}}", {"b": "z"}, nullcontext("azc")),
+        ("{{```{{a+b}}```}}", {"a": 40, "b": 2}, nullcontext("42")),
     ],
 )
 def test_render(

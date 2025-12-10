@@ -31,6 +31,7 @@ class ParseContext:
     index: int = 0  # Index of the next character to consume
     position: tuple[int, int] = (0, 0)  # 1-based; default means auto-compute.
     source_id: str = ""
+    in_template_expr: bool = False
 
     def __post_init__(self):
         """Makes sure that the index is valid"""
@@ -105,6 +106,8 @@ class ParseContext:
             self.source,
             index=index,
             position=pos,
+            source_id=self.source_id,
+            in_template_expr=self.in_template_expr,
         )
 
     def at_eof(self) -> bool:

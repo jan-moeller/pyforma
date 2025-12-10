@@ -16,8 +16,10 @@ from pyforma._ast.expressions import (
     IfExpression,
     ForExpression,
     WithExpression,
+    TemplateExpression,
 )
 from pyforma._util import defaulted
+from .enclosed import enclosed
 from .negative_lookahead import negative_lookahead
 from .non_empty import non_empty
 from .delimited import delimited
@@ -39,250 +41,325 @@ from .integer_literal_expression import integer_literal_expression
 from .floating_point_literal_expression import floating_point_literal_expression
 
 
-@parser(name="expression")
-def expression(context: ParseContext) -> ParseResult[Expression]:
-    """Parse an expression."""
+@cache
+def expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Expression]:
+    @parser(name="expression")
+    def parse_expression(context: ParseContext) -> ParseResult[Expression]:
+        """Parse an expression."""
 
-    if context.at_eof():
-        return ParseResult.make_failure(context=context, expected=expression.name)
+        if context.at_eof():
+            return ParseResult.make_failure(
+                context=context, expected=parse_expression.name
+            )
 
-    power_expression: Parser[Expression] = _binop_expression(primary_expression, "**")
-    factor_expression: Parser[Expression] = _unop_expression(
-        power_expression, "+", "-", "~"
-    )
-    term_expression: Parser[Expression] = _binop_expression(
-        factor_expression, "*", "//", "/", "%", "@"
-    )
-    sum_expression: Parser[Expression] = _binop_expression(term_expression, "+", "-")
-    shift_expression: Parser[Expression] = _binop_expression(sum_expression, "<<", ">>")
-    bw_and_expression: Parser[Expression] = _binop_expression(shift_expression, "&")
-    bw_xor_expression: Parser[Expression] = _binop_expression(bw_and_expression, "^")
-    bw_or_expression: Parser[Expression] = _binop_expression(bw_xor_expression, "|")
-    in_expression: Parser[Expression] = _binop_expression(
-        bw_or_expression, "in", "not in"
-    )
-    comparison_expression: Parser[Expression] = _comparison_expression(in_expression)
-    inversion_expression: Parser[Expression] = _unop_expression(
-        comparison_expression, "not"
-    )
-    conjunction_expression: Parser[Expression] = _binop_expression(
-        inversion_expression, "and"
-    )
-    disjunction_expression: Parser[Expression] = _binop_expression(
-        conjunction_expression, "or"
-    )
-
-    r = disjunction_expression(context)
-    if r.is_failure:
-        return ParseResult.make_failure(
-            expected=expression.name,
-            context=context,
-            cause=r,
+        power_expression: Parser[Expression] = _binop_expression(
+            primary_expression(template_parser), "**"
         )
-    return r
+        factor_expression: Parser[Expression] = _unop_expression(
+            power_expression, "+", "-", "~"
+        )
+        term_expression: Parser[Expression] = _binop_expression(
+            factor_expression, "*", "//", "/", "%", "@"
+        )
+        sum_expression: Parser[Expression] = _binop_expression(
+            term_expression, "+", "-"
+        )
+        shift_expression: Parser[Expression] = _binop_expression(
+            sum_expression, "<<", ">>"
+        )
+        bw_and_expression: Parser[Expression] = _binop_expression(shift_expression, "&")
+        bw_xor_expression: Parser[Expression] = _binop_expression(
+            bw_and_expression, "^"
+        )
+        bw_or_expression: Parser[Expression] = _binop_expression(bw_xor_expression, "|")
+        in_expression: Parser[Expression] = _binop_expression(
+            bw_or_expression, "in", "not in"
+        )
+        comparison_expression: Parser[Expression] = _comparison_expression(
+            in_expression
+        )
+        inversion_expression: Parser[Expression] = _unop_expression(
+            comparison_expression, "not"
+        )
+        conjunction_expression: Parser[Expression] = _binop_expression(
+            inversion_expression, "and"
+        )
+        disjunction_expression: Parser[Expression] = _binop_expression(
+            conjunction_expression, "or"
+        )
 
-
-paren_expression = transform_success(
-    sequence(
-        literal("("),
-        whitespace,
-        expression,
-        whitespace,
-        literal(")"),
-        name="paren-expression",
-    ),
-    transform=lambda s: s[2],
-)
-
-list_expression = transform_success(
-    sequence(
-        literal("["),
-        delimited(
-            delim=sequence(whitespace, literal(","), whitespace),
-            content=expression,
-            allow_trailing_delim=False,
-        ),
-        literal("]"),
-        name="list-expression",
-    ),
-    transform=lambda s, c: ListExpression(origin=c.origin(), elements=s[1]),
-)
-
-dict_expression = transform_success(
-    sequence(
-        literal("{"),
-        delimited(
-            delim=sequence(whitespace, literal(","), whitespace),
-            content=transform_success(
-                sequence(expression, whitespace, literal(":"), whitespace, expression),
-                transform=lambda s: (s[0], s[4]),
-            ),
-            allow_trailing_delim=False,
-        ),
-        literal("}"),
-        name="dict-expression",
-    ),
-    transform=lambda s, c: DictExpression(origin=c.origin(), elements=s[1]),
-)
-
-lambda_expression = transform_success(
-    sequence(
-        literal("lambda"),
-        whitespace,
-        delimited(
-            delim=sequence(whitespace, literal(","), whitespace),
-            content=identifier,
-            allow_trailing_delim=False,
-        ),
-        whitespace,
-        literal(":"),
-        whitespace,
-        expression,
-    ),
-    transform=lambda s, c: LambdaExpression(
-        origin=c.origin(), parameters=s[2], return_value=s[6]
-    ),
-)
-
-if_expression = transform_success(
-    sequence(
-        transform_success(
-            sequence(
-                literal("if"),
-                non_empty(whitespace),
-                expression,
-                whitespace,
-                literal(":"),
-                whitespace,
-                expression,
-                whitespace,
-                name="if-branch",
-            ),
-            transform=lambda s: (s[2], s[6]),
-        ),
-        repetition(
-            transform_success(
-                sequence(
-                    literal("elif"),
-                    non_empty(whitespace),
-                    expression,
-                    whitespace,
-                    literal(":"),
-                    whitespace,
-                    expression,
-                    whitespace,
-                    name="elif-branch",
-                ),
-                transform=lambda s: (s[2], s[6]),
+        r = disjunction_expression(context)
+        if r.is_failure:
+            return ParseResult.make_failure(
+                expected=parse_expression.name,
+                context=context,
+                cause=r,
             )
-        ),
-        transform_success(
-            option(
-                sequence(
-                    literal("else"),
-                    whitespace,
-                    literal(":"),
-                    whitespace,
-                    expression,
-                    whitespace,
-                    name="else-branch",
-                ),
-            ),
-            transform=lambda s, c: (
-                (
-                    ValueExpression(origin=c.origin(), value=True),
-                    s[4],
-                ),
-            )
-            if s is not None
-            else (),
-        ),
-    ),
-    transform=lambda s, c: IfExpression(origin=c.origin(), cases=(s[0], *s[1], *s[2])),
-)
+        return r
 
-for_expression = transform_success(
-    sequence(
-        literal("for"),
-        whitespace,
-        non_empty(
+    return parse_expression
+
+
+@cache
+def paren_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Expression]:
+    paren_expression = transform_success(
+        sequence(
+            literal("("),
+            whitespace,
+            expression(template_parser),
+            whitespace,
+            literal(")"),
+            name="paren-expression",
+        ),
+        transform=lambda s: s[2],
+    )
+    return paren_expression
+
+
+@cache
+def list_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[ListExpression]:
+    list_expression = transform_success(
+        sequence(
+            literal("["),
             delimited(
                 delim=sequence(whitespace, literal(","), whitespace),
-                content=identifier,
+                content=expression(template_parser),
                 allow_trailing_delim=False,
-            )
+            ),
+            literal("]"),
+            name="list-expression",
         ),
-        whitespace,
-        literal("in"),
-        whitespace,
-        expression,
-        whitespace,
-        literal(":"),
-        whitespace,
-        expression,
-        whitespace,
-    ),
-    transform=lambda s, c: ForExpression(
-        origin=c.origin(),
-        var_names=(s[2]),
-        iter_expr=s[6],
-        expr=s[10],
-    ),
-)
+        transform=lambda s, c: ListExpression(origin=c.origin(), elements=s[1]),
+    )
+    return list_expression
 
-with_expression = transform_success(
-    sequence(
-        literal("with"),
-        whitespace,
-        non_empty(
+
+@cache
+def dict_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[DictExpression]:
+    dict_expression = transform_success(
+        sequence(
+            literal("{"),
             delimited(
-                delim=sequence(whitespace, literal(";"), whitespace),
+                delim=sequence(whitespace, literal(","), whitespace),
                 content=transform_success(
                     sequence(
-                        non_empty(
-                            delimited(
-                                delim=sequence(whitespace, literal(","), whitespace),
-                                content=identifier,
-                                allow_trailing_delim=False,
-                            )
-                        ),
+                        expression(template_parser),
                         whitespace,
-                        literal("="),
+                        literal(":"),
                         whitespace,
-                        expression,
+                        expression(template_parser),
                     ),
                     transform=lambda s: (s[0], s[4]),
                 ),
                 allow_trailing_delim=False,
-            )
+            ),
+            literal("}"),
+            name="dict-expression",
         ),
-        whitespace,
-        literal(":"),
-        whitespace,
-        expression,
-    ),
-    transform=lambda s, c: WithExpression(
-        origin=c.origin(),
-        bindings=s[2],
-        expr=s[6],
-    ),
-)
+        transform=lambda s, c: DictExpression(origin=c.origin(), elements=s[1]),
+    )
+    return dict_expression
 
 
-simple_expression: Parser[Expression] = alternation(
-    identifier_expression,
-    string_literal_expression,
-    floating_point_literal_expression,
-    integer_literal_expression,
-    paren_expression,
-    list_expression,
-    dict_expression,
-    lambda_expression,
-    if_expression,
-    for_expression,
-    with_expression,
-    name="simple-expression",
-)
+@cache
+def lambda_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[LambdaExpression]:
+    lambda_expression = transform_success(
+        sequence(
+            literal("lambda"),
+            whitespace,
+            delimited(
+                delim=sequence(whitespace, literal(","), whitespace),
+                content=identifier,
+                allow_trailing_delim=False,
+            ),
+            whitespace,
+            literal(":"),
+            whitespace,
+            expression(template_parser),
+        ),
+        transform=lambda s, c: LambdaExpression(
+            origin=c.origin(), parameters=s[2], return_value=s[6]
+        ),
+    )
+    return lambda_expression
+
+
+@cache
+def if_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[IfExpression]:
+    if_expression = transform_success(
+        sequence(
+            transform_success(
+                sequence(
+                    literal("if"),
+                    non_empty(whitespace),
+                    expression(template_parser),
+                    whitespace,
+                    literal(":"),
+                    whitespace,
+                    expression(template_parser),
+                    whitespace,
+                    name="if-branch",
+                ),
+                transform=lambda s: (s[2], s[6]),
+            ),
+            repetition(
+                transform_success(
+                    sequence(
+                        literal("elif"),
+                        non_empty(whitespace),
+                        expression(template_parser),
+                        whitespace,
+                        literal(":"),
+                        whitespace,
+                        expression(template_parser),
+                        whitespace,
+                        name="elif-branch",
+                    ),
+                    transform=lambda s: (s[2], s[6]),
+                )
+            ),
+            transform_success(
+                option(
+                    sequence(
+                        literal("else"),
+                        whitespace,
+                        literal(":"),
+                        whitespace,
+                        expression(template_parser),
+                        whitespace,
+                        name="else-branch",
+                    ),
+                ),
+                transform=lambda s, c: (
+                    (
+                        ValueExpression(origin=c.origin(), value=True),
+                        s[4],
+                    ),
+                )
+                if s is not None
+                else (),
+            ),
+        ),
+        transform=lambda s, c: IfExpression(
+            origin=c.origin(), cases=(s[0], *s[1], *s[2])
+        ),
+    )
+    return if_expression
+
+
+@cache
+def for_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[ForExpression]:
+    for_expression = transform_success(
+        sequence(
+            literal("for"),
+            whitespace,
+            non_empty(
+                delimited(
+                    delim=sequence(whitespace, literal(","), whitespace),
+                    content=identifier,
+                    allow_trailing_delim=False,
+                )
+            ),
+            whitespace,
+            literal("in"),
+            whitespace,
+            expression(template_parser),
+            whitespace,
+            literal(":"),
+            whitespace,
+            expression(template_parser),
+            whitespace,
+        ),
+        transform=lambda s, c: ForExpression(
+            origin=c.origin(),
+            var_names=(s[2]),
+            iter_expr=s[6],
+            expr=s[10],
+        ),
+    )
+    return for_expression
+
+
+@cache
+def with_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[WithExpression]:
+    with_expression = transform_success(
+        sequence(
+            literal("with"),
+            whitespace,
+            non_empty(
+                delimited(
+                    delim=sequence(whitespace, literal(";"), whitespace),
+                    content=transform_success(
+                        sequence(
+                            non_empty(
+                                delimited(
+                                    delim=sequence(
+                                        whitespace, literal(","), whitespace
+                                    ),
+                                    content=identifier,
+                                    allow_trailing_delim=False,
+                                )
+                            ),
+                            whitespace,
+                            literal("="),
+                            whitespace,
+                            expression(template_parser),
+                        ),
+                        transform=lambda s: (s[0], s[4]),
+                    ),
+                    allow_trailing_delim=False,
+                )
+            ),
+            whitespace,
+            literal(":"),
+            whitespace,
+            expression(template_parser),
+        ),
+        transform=lambda s, c: WithExpression(
+            origin=c.origin(),
+            bindings=s[2],
+            expr=s[6],
+        ),
+    )
+    return with_expression
+
+
+@cache
+def simple_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Expression]:
+    simple_expression: Parser[Expression] = alternation(
+        identifier_expression,
+        string_literal_expression,
+        floating_point_literal_expression,
+        integer_literal_expression,
+        template_expression(template_parser),
+        paren_expression(template_parser),
+        list_expression(template_parser),
+        dict_expression(template_parser),
+        lambda_expression(template_parser),
+        if_expression(template_parser),
+        for_expression(template_parser),
+        with_expression(template_parser),
+        name="simple-expression",
+    )
+    return simple_expression
 
 
 @dataclass(frozen=True)
@@ -297,22 +374,34 @@ _none_expr = ValueExpression(
     value=None,
 )
 
-_slice = transform_success(
-    sequence(
-        option(expression),
-        whitespace,
-        literal(":"),
-        whitespace,
-        option(expression),
-        option(sequence(whitespace, literal(":"), option(expression))),
-        name="slice",
-    ),
-    transform=lambda s: Slice(
-        defaulted(s[0], _none_expr),
-        defaulted(s[4], _none_expr),
-        defaulted(s[5][2], _none_expr) if s[5] else _none_expr,
-    ),
-)
+
+@cache
+def _slice(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Slice]:
+    _slice = transform_success(
+        sequence(
+            option(expression(template_parser)),
+            whitespace,
+            literal(":"),
+            whitespace,
+            option(expression(template_parser)),
+            option(
+                sequence(
+                    whitespace,
+                    literal(":"),
+                    option(expression(template_parser)),
+                )
+            ),
+            name="slice",
+        ),
+        transform=lambda s: Slice(
+            defaulted(s[0], _none_expr),
+            defaulted(s[4], _none_expr),
+            defaulted(s[5][2], _none_expr) if s[5] else _none_expr,
+        ),
+    )
+    return _slice
 
 
 @dataclass(frozen=True)
@@ -320,17 +409,22 @@ class Indexing:
     index: Expression | Slice
 
 
-_indexing = transform_success(
-    sequence(
-        literal("["),
-        whitespace,
-        alternation(_slice, expression),
-        whitespace,
-        literal("]"),
-        name="indexing",
-    ),
-    transform=lambda s: Indexing(s[2]),
-)
+@cache
+def _indexing(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Indexing]:
+    _indexing = transform_success(
+        sequence(
+            literal("["),
+            whitespace,
+            alternation(_slice(template_parser), expression(template_parser)),
+            whitespace,
+            literal("]"),
+            name="indexing",
+        ),
+        transform=lambda s: Indexing(s[2]),
+    )
+    return _indexing
 
 
 @dataclass(frozen=True)
@@ -340,13 +434,16 @@ class CallArguments:
 
 
 @cache
-def _call_args(allow_trailing: bool) -> Parser[tuple[Expression, ...]]:
+def _call_args(
+    template_parser: Parser[TemplateExpression],
+    allow_trailing: bool,
+) -> Parser[tuple[Expression, ...]]:
     return transform_success(
         delimited(
             delim=sequence(whitespace, literal(","), whitespace),
             content=sequence(
                 negative_lookahead(sequence(identifier, whitespace, literal("="))),
-                expression,
+                expression(template_parser),
             ),
             allow_trailing_delim=allow_trailing,
             name="call-arguments",
@@ -356,7 +453,10 @@ def _call_args(allow_trailing: bool) -> Parser[tuple[Expression, ...]]:
 
 
 @cache
-def _call_kwargs(allow_trailing: bool) -> Parser[tuple[tuple[str, Expression], ...]]:
+def _call_kwargs(
+    template_parser: Parser[TemplateExpression],
+    allow_trailing: bool,
+) -> Parser[tuple[tuple[str, Expression], ...]]:
     return transform_success(
         option(
             transform_success(
@@ -367,7 +467,7 @@ def _call_kwargs(allow_trailing: bool) -> Parser[tuple[tuple[str, Expression], .
                         whitespace,
                         literal("="),
                         whitespace,
-                        expression,
+                        expression(template_parser),
                     ),
                     allow_trailing_delim=allow_trailing,
                     name="call-kw-arguments",
@@ -384,39 +484,45 @@ class AttributeAccess:
     identifier: str
 
 
-_call = transform_success(
-    sequence(
-        literal("("),
-        whitespace,
-        alternation(
-            transform_success(
-                sequence(
-                    non_empty(_call_args(False)),
-                    whitespace,
-                    literal(","),
-                    whitespace,
-                    non_empty(_call_kwargs(True)),
-                    name="args-and-kwargs",
+@cache
+def _call(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[CallArguments]:
+    _call = transform_success(
+        sequence(
+            literal("("),
+            whitespace,
+            alternation(
+                transform_success(
+                    sequence(
+                        non_empty(_call_args(template_parser, False)),
+                        whitespace,
+                        literal(","),
+                        whitespace,
+                        non_empty(_call_kwargs(template_parser, True)),
+                        name="args-and-kwargs",
+                    ),
+                    transform=lambda s: CallArguments(s[0], s[4]),
                 ),
-                transform=lambda s: CallArguments(s[0], s[4]),
+                transform_success(
+                    non_empty(_call_kwargs(template_parser, True)),
+                    transform=lambda s: CallArguments((), s),
+                    name="kwargs",
+                ),
+                transform_success(
+                    _call_args(template_parser, True),
+                    transform=lambda s: CallArguments(s, ()),
+                    name="args",
+                ),
             ),
-            transform_success(
-                non_empty(_call_kwargs(True)),
-                transform=lambda s: CallArguments((), s),
-                name="kwargs",
-            ),
-            transform_success(
-                _call_args(True),
-                transform=lambda s: CallArguments(s, ()),
-                name="args",
-            ),
+            whitespace,
+            literal(")"),
+            name="call",
         ),
-        whitespace,
-        literal(")"),
-        name="call",
-    ),
-    transform=lambda s: s[2],
-)
+        transform=lambda s: s[2],
+    )
+    return _call
+
 
 _attribute = transform_success(
     sequence(literal("."), whitespace, identifier),
@@ -434,7 +540,7 @@ def _transform_primary_expression(
 
     if result.is_failure:
         return ParseResult.make_failure(
-            expected=primary_expression.name,
+            expected="primary_expression",
             context=result.context,
             cause=result,
         )
@@ -480,17 +586,31 @@ def _transform_primary_expression(
     return ParseResult.make_success(result=expr, context=result.context)
 
 
-primary_expression = transform_result(
-    transform_success(
-        sequence(
-            simple_expression,
-            repetition(sequence(whitespace, alternation(_indexing, _call, _attribute))),
-            name="primary-expression",
+@cache
+def primary_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Expression]:
+    primary_expression = transform_result(
+        transform_success(
+            sequence(
+                simple_expression(template_parser),
+                repetition(
+                    sequence(
+                        whitespace,
+                        alternation(
+                            _indexing(template_parser),
+                            _call(template_parser),
+                            _attribute,
+                        ),
+                    )
+                ),
+                name="primary-expression",
+            ),
+            transform=lambda s: (s[0], tuple(e[1] for e in s[1])),
         ),
-        transform=lambda s: (s[0], tuple(e[1] for e in s[1])),
-    ),
-    transform=_transform_primary_expression,
-)
+        transform=_transform_primary_expression,
+    )
+    return primary_expression
 
 
 @cache
@@ -644,3 +764,38 @@ def _comparison_expression(base_expr: Parser[Expression]) -> Parser[Expression]:
         return ParseResult.make_success(result=result_expr, context=r.context)
 
     return parse_comparison_expression
+
+
+@cache
+def template_expression(
+    template_parser: Parser[TemplateExpression],
+) -> Parser[TemplateExpression]:
+    @parser
+    def template_expr_parser(context: ParseContext) -> ParseResult[TemplateExpression]:
+        was_in_template_expr = context.in_template_expr
+        result = template_parser(
+            ParseContext(
+                source=context.source,
+                index=context.index,
+                position=context.position,
+                source_id=context.source_id,
+                in_template_expr=True,
+            )
+        )
+        return ParseResult(
+            result.value,
+            context=ParseContext(
+                source=result.context.source,
+                index=result.context.index,
+                position=result.context.position,
+                source_id=result.context.source_id,
+                in_template_expr=was_in_template_expr,
+            ),
+        )
+
+    parse = transform_success(
+        enclosed(delim=literal("```"), content=template_expr_parser),
+        transform=lambda s: s[1],
+    )
+
+    return parse

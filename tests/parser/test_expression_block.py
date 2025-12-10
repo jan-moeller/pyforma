@@ -1,13 +1,14 @@
 import pytest
 
+from pyforma import TemplateSyntaxConfig
 from pyforma._ast.expressions import Expression, ValueExpression, IdentifierExpression
 from pyforma._parser import (
     ParseContext,
     expression_block,
-    BlockSyntaxConfig,
     ParseFailure,
     ParseSuccess,
     ParseResult,
+    template,
 )
 from pyforma._ast.origin import Origin
 
@@ -91,7 +92,8 @@ def test_expression_block(
     result_idx: int,
 ):
     context = ParseContext(source)
-    result = expression_block(BlockSyntaxConfig("{{", "}}"))(context)
+    syntax = TemplateSyntaxConfig()
+    result = expression_block(syntax, template(syntax))(context)
     assert type(result.value) is type(expected)
     assert result.value == expected
     if isinstance(expected, ParseSuccess):

@@ -101,7 +101,7 @@ def literal_environment(syntax: TemplateSyntaxConfig) -> Parser[ValueExpression]
 @cache
 def with_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression, ...]],
+    template_parser: Parser[TemplateExpression],
 ) -> Parser[WithExpression]:
     parse_open = transform_success(
         sequence(
@@ -113,7 +113,11 @@ def with_environment(
                 delim=sequence(whitespace, literal(";"), whitespace),
                 content=transform_success(
                     sequence(
-                        _destructuring, whitespace, literal("="), whitespace, expression
+                        _destructuring,
+                        whitespace,
+                        literal("="),
+                        whitespace,
+                        expression(template_parser),
                     ),
                     transform=lambda s: (s[0], s[4]),
                 ),
@@ -142,7 +146,7 @@ def with_environment(
         transform=lambda s, c: WithExpression(
             origin=c.origin(),
             bindings=tuple((e[0], e[1]) for e in s[0]),
-            expr=TemplateExpression(origin=c.origin(), content=s[1]),
+            expr=s[1],
         ),
     )
 
@@ -150,7 +154,7 @@ def with_environment(
 @cache
 def if_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression, ...]],
+    template_parser: Parser[TemplateExpression],
 ) -> Parser[IfExpression]:
     parse_if = transform_success(
         sequence(
@@ -158,7 +162,7 @@ def if_environment(
             whitespace,
             literal("if"),
             non_empty(whitespace),
-            expression,
+            expression(template_parser),
             whitespace,
             literal(syntax.environment.close),
         ),
@@ -170,7 +174,7 @@ def if_environment(
             whitespace,
             literal("elif"),
             non_empty(whitespace),
-            expression,
+            expression(template_parser),
             whitespace,
             literal(syntax.environment.close),
         ),
@@ -206,15 +210,12 @@ def if_environment(
                 option(sequence(parse_else, template_parser)),
                 transform=lambda s, c: TemplateExpression(origin=c.origin(), content=())
                 if s is None
-                else TemplateExpression(origin=c.origin(), content=s[1]),
+                else s[1],
             ),
             parse_close,
         ),
         transform=lambda s, c: (
-            tuple(
-                (expr, TemplateExpression(origin=c.origin(), content=templ))
-                for expr, templ in ((s[0], s[1]), *s[2])
-            ),
+            tuple((expr, templ) for expr, templ in ((s[0], s[1]), *s[2])),
             s[3],
         ),
         name="if-environment",
@@ -232,7 +233,7 @@ def if_environment(
 @cache
 def for_environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression, ...]],
+    template_parser: Parser[TemplateExpression],
 ) -> Parser[Expression]:
     parse_open = transform_success(
         sequence(
@@ -244,7 +245,7 @@ def for_environment(
             non_empty(whitespace),
             literal("in"),
             non_empty(whitespace),
-            expression,
+            expression(template_parser),
             whitespace,
             literal(syntax.environment.close),
         ),
@@ -274,7 +275,7 @@ def for_environment(
                     origin=c.origin(),
                     var_names=s[0][0],
                     iter_expr=s[0][1],
-                    expr=TemplateExpression(origin=c.origin(), content=s[1]),
+                    expr=s[1],
                 ),
             ),
             kw_arguments=(),
@@ -285,7 +286,7 @@ def for_environment(
 @cache
 def environment(
     syntax: TemplateSyntaxConfig,
-    template_parser: Parser[tuple[Expression, ...]],
+    template_parser: Parser[TemplateExpression],
 ) -> Parser[Expression]:
     """Creates an environment parser using the provided template syntax
 

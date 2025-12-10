@@ -7,16 +7,20 @@ from .literal import literal
 from .sequence import sequence
 from .parser import Parser
 from .expression import expression
-from .template_syntax_config import BlockSyntaxConfig
-from pyforma._ast.expressions import Expression
+from .template_syntax_config import TemplateSyntaxConfig
+from pyforma._ast.expressions import Expression, TemplateExpression
 
 
 @cache
-def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
+def expression_block(
+    syntax: TemplateSyntaxConfig,
+    template_parser: Parser[TemplateExpression],
+) -> Parser[Expression]:
     """Creates an expression block parser using the provided open and close markers
 
     Args:
         syntax: The syntax config to use
+        template_parser: The template parser to use
 
     Returns:
         The expression block parser.
@@ -24,11 +28,11 @@ def expression_block(syntax: BlockSyntaxConfig) -> Parser[Expression]:
 
     return transform_success(
         sequence(
-            literal(syntax.open),
+            literal(syntax.expression.open),
             whitespace,
-            expression,
+            expression(template_parser),
             whitespace,
-            literal(syntax.close),
+            literal(syntax.expression.close),
             name="expression-block",
         ),
         transform=lambda result: result[2],
