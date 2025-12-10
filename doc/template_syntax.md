@@ -46,6 +46,9 @@ PyForma expressions are a subset of Python expressions.
   with expression: `with name=expr1: expr2`. It can also be used to destructure values:
   `with a, b=c: a+b`. It is possible to introduce several names in one go, by separating them via
   `;`: `with a,b=c; d=e+4: a+b+d`
+- **Template Strings**: Unrelated to the Python feature of the same name, PyForma supports
+  template string expressions, enclosed in \```. These are evaluated as templates, and automatically
+  rendered to strings. Example: ` ```Hello {{name}}!``` `.
 
 The operator precedence follows Python's example.
 
