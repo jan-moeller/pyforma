@@ -1,6 +1,6 @@
 [project]
 name = "pyforma"
-version = "0.6.0"
+version = "0.7.0"
 description = "A python template engine"
 readme = "README.md"
 license = "MIT"
